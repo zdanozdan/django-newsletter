@@ -23,4 +23,3 @@ SITE_ID = 1
 
 TEMPLATE_DIRS = ('test_templates', )
 
-DEBUG = True
