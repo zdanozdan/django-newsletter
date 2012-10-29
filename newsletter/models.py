@@ -206,11 +206,18 @@ class Newsletter(models.Model):
             {'newsletter_slug': self.slug}
         )
 
+    @permalink
+    def archive_url(self):
+        return (
+            'newsletter_archive', (),
+            {'newsletter_slug': self.slug}
+        )
+
     def get_sender(self):
         return u'%s <%s>' % (self.sender, self.email)
 
     def get_subscriptions(self):
-        logger.debug(_(u'Looking up subscribers for %s'), self)
+        logger.debug(u'Looking up subscribers for %s', self)
 
         return Subscription.objects.filter(newsletter=self, subscribed=True)
 
@@ -502,7 +509,7 @@ class Article(models.Model):
             article = qs.filter(sortorder__lt=self.sortorder)[0]
 
             logger.debug(
-                'Found prev %d of %d.',
+                u'Found prev %d of %d.',
                 article.sortorder, self.sortorder
             )
 
@@ -519,7 +526,7 @@ class Article(models.Model):
             article = qs.filter(sortorder__gt=self.sortorder)[0]
 
             logger.debug(
-                'Found next %d of %d.',
+                u'Found next %d of %d.',
                 article.sortorder, self.sortorder
             )
 
@@ -679,6 +686,7 @@ class Submission(models.Model):
                     message.send()
 
                 except Exception, e:
+                    # TODO: Test coverage for this branch.
                     logger.error(
                         ugettext(u'Message %(subscription)s failed '
                                  u'with error: %(error)s'),
@@ -713,11 +721,18 @@ class Submission(models.Model):
         return submission
 
     def save(self):
+        """ Set the newsletter from associated message upon saving. """
+        assert self.message.newsletter
+
         self.newsletter = self.message.newsletter
+
         return super(Submission, self).save()
 
     @permalink
     def get_absolute_url(self):
+        assert self.newsletter.slug
+        assert self.message.slug
+
         return (
             'newsletter_archive_detail', (), {
                 'newsletter_slug': self.newsletter.slug,
