@@ -21,7 +21,7 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # cls.selenium.quit()
+        cls.selenium.quit()
         super(SeleniumAdminTests, cls).tearDownClass()
 
     def setUp(self):
