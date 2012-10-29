@@ -1,5 +1,5 @@
 DATABASES = {
-    'default' : {
+    'default': {
         'ENGINE': 'django.db.backends.sqlite3'
     }
 }
@@ -14,6 +14,8 @@ INSTALLED_APPS = (
 )
 
 ROOT_URLCONF = 'test_urls'
+
+STATIC_URL = '/static/'
 
 SITE_ID = 1
 
