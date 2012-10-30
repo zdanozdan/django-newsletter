@@ -34,22 +34,23 @@ try:
 except:
     REQUIREMENTS = None
 
-# These dependencies are default
+# These test dependencies are default
 tests_require = [
     'django-setuptest',
     'selenium'
 ]
 
-# Additional dependencies
+# Additional test dependencies
 try:
-    # For Django 1.3, we need django-live-server
+    # For Django < 1.4, we need django-live-server
     import django
-    if django.VERSION[0] == 1 and django.VERSION[1] == 3:
+    django_version = django.VERSION[:2]
+    if django_version[0] == 1 and django_version[1] < 4:
         tests_require.append('django-live-server')
 
     # For Python < 2.7, we need argparse
     import platform
-    python_version = platform.python_version_tuple()
+    python_version = map(int, platform.python_version_tuple()[:2])
     if python_version[0] == 2 and python_version[1] < 7:
         tests_require.append('argparse')
 
