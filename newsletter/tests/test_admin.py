@@ -1,6 +1,12 @@
 from django.contrib.auth.models import User
 
-from django.test import LiveServerTestCase
+try:
+    # Django 1.4+
+    from django.test import LiveServerTestCase
+except ImportError:
+    # Django 1.3
+    from django_liveserver.testcases import LiveServerTestCase
+
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 
