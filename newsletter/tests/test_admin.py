@@ -1,11 +1,11 @@
 from django.contrib.auth.models import User
 
-try:
-    # Django 1.4+
+# On Django 1.3 use the backported LiveServerTestCase from django-live-server
+import django
+if django.VERSION[0] == 1 and django.VERSION[1] == 3:
+    from liveserver.test.testcases import LiveServerTestCase
+else:
     from django.test import LiveServerTestCase
-except ImportError:
-    # Django 1.3
-    from django_liveserver.testcases import LiveServerTestCase
 
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
