@@ -34,6 +34,30 @@ try:
 except:
     REQUIREMENTS = None
 
+# These dependencies are default
+tests_require = [
+    'django-setuptest',
+    'selenium'
+]
+
+# Additional dependencies
+try:
+    # For Django 1.3, we need django-live-server
+    import django
+    if django.VERSION[0] == 1 and django.VERSION[1] == 3:
+        tests_require.append('django-live-server')
+
+    # For Python < 2.7, we need argparse
+    import platform
+    python_version = platform.python_version_tuple()
+    if python_version[0] == 2 and python_version[1] < 7:
+        tests_require.append('argparse')
+
+except:
+    # This code is allowed to fail as dependencies might not be installed
+    pass
+
+
 setup(
     name = 'django-newsletter',
     version = "0.3.0",
@@ -54,10 +78,5 @@ setup(
                    'Programming Language :: Python',
                    'Topic :: Utilities'],
     test_suite='setuptest.setuptest.SetupTestSuite',
-    tests_require=(
-        'django-setuptest',
-        'argparse',  # apparently needed by django-setuptest on Python 2.6
-        'django-live-server', # Backports of LiveTestCase for Django 1.3
-        'selenium'
-    ),
+    tests_require=tests_require
 )
