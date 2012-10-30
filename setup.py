@@ -56,6 +56,8 @@ setup(
     test_suite='setuptest.setuptest.SetupTestSuite',
     tests_require=(
         'django-setuptest',
-        'argparse',  # apparently needed by django-setuptest on python 2.6
+        'argparse',  # apparently needed by django-setuptest on Python 2.6
+        'django-liveserver', # Backports of LiveTestCase for Django 1.3
+        'selenium'
     ),
 )
