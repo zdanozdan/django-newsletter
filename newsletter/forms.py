@@ -71,10 +71,14 @@ class SubscribeRequestForm(NewsletterForm):
                 newsletter=self.instance.newsletter
             )
 
-            if subscription.subscribed:
+            if subscription.subscribed and not subscription.unsubscribed:
                 raise ValidationError(
                     _("Your e-mail address has already been subscribed to.")
                 )
+            else:
+                self.instance = subscription
+
+            self.instance = subscription
 
         except Subscription.DoesNotExist:
             pass
