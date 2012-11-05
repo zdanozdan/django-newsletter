@@ -112,6 +112,9 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.wd.find(link_text='Subscriptions').click()
         self.wd.find(link_text='Add subscription').click()
 
+        self.assertEquals(self.wd.title,
+            "Add subscription | Django site admin")
+
         # Fill in form
         form = self.wd.find(tag_name='form')
         form.find(name='name_field').send_keys('Test subscriber')
@@ -126,3 +129,48 @@ class SeleniumAdminTests(LiveServerTestCase):
         # Confirm save results
         self.assertTrue(self.wd.find(text_contains='added successfully'))
         self.assertTrue(self.wd.find(link_text='Test subscriber'))
+
+    def test_addmessage(self):
+        """ Test adding a message to a newsletter. """
+
+        # Make sure a newsletter is created
+        self.test_addnewsletter()
+
+        # Go back to main admin page
+        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+
+        # Open add form
+        self.wd.find(link_text='Messages').click()
+        self.wd.find(link_text='Add message').click()
+
+        self.assertEquals(self.wd.title,
+            "Add message | Django site admin")
+
+        # Fill in form
+        form = self.wd.find(tag_name='form')
+        form.find(name='title').send_keys('Test message')
+        form.find(name='newsletter').find(text='Test newsletter').click()
+
+        # Setup the first article
+        form.find(name='articles-0-title').click().send_keys(
+            'Test article title 1')
+        form.find(name='articles-0-text').click().send_keys(
+            'Test text 1')
+
+        # Open hidden link tab and fill in URL
+        form.find(id='fieldsetcollapser0').click()
+        form.find(name='articles-0-url').click().send_keys(
+            'http://www.google.com')
+
+        # Setup the second article
+        form.find(name='articles-1-title').click().send_keys(
+            'Test article title 2')
+        form.find(name='articles-1-text').click().send_keys(
+            'Test text 2')
+
+        # Submit the form
+        form.submit()
+
+        # Confirm save results
+        self.assertTrue(self.wd.find(text_contains='added successfully'))
+        self.assertTrue(self.wd.find(link_text='Test message'))
