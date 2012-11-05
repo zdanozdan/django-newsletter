@@ -55,3 +55,18 @@ class SeleniumAdminTests(LiveServerTestCase):
 
         self.assertEqual("Site administration | Django site admin",
             self.wd.title)
+
+    def test_modules(self):
+        """ Test for presence of admin modules. """
+
+        # Make sure we're logged in first
+        self.test_login()
+
+        self.wd.find(link_text='Newsletter')
+
+        self.assertTrue(self.wd.find(link_text='Newsletter'))
+        self.assertTrue(self.wd.find(link_text='E-mail templates'))
+        self.assertTrue(self.wd.find(link_text='Messages'))
+        self.assertTrue(self.wd.find(link_text='Newsletters'))
+        self.assertTrue(self.wd.find(link_text='Submissions'))
+        self.assertTrue(self.wd.find(link_text='Subscriptions'))
