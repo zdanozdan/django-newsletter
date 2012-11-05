@@ -21,7 +21,7 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.wd = WebDriver(wait=True)
+        cls.wd = WebDriver(wait=10)
         super(SeleniumAdminTests, cls).setUpClass()
 
     @classmethod
