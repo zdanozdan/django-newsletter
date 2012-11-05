@@ -43,14 +43,15 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.wait()
 
         # Conditional admin login
-        if self.wd.title == 'Log in | Django site admin':
+        if 'Log in' in self.wd.title:
             print 'logging in'
             username_input = self.wd.find(name="username")
             username_input.send_keys('test')
             password_input = self.wd.find(name="password")
             password_input.send_keys('test')
 
-            self.wd.find(xpath='//input[@value="Log in"]').click()
+            self.assertTrue(
+                self.wd.find(xpath='//input[@value="Log in"]').click())
 
             self.wait()
 
@@ -85,7 +86,7 @@ class SeleniumAdminTests(LiveServerTestCase):
         """ Test adding a newsletter. """
 
         # Go to newsletters view
-        self.wd.find(link_text='Newsletters').click()
+        self.assertTrue(self.wd.find(link_text='Newsletters').click())
         self.assertEquals(self.wd.title,
             "Select newsletter to change | Django site admin")
 
@@ -100,7 +101,7 @@ class SeleniumAdminTests(LiveServerTestCase):
         form.find(name='sender').send_keys('Test sender')
 
         # Submit the form
-        form.submit()
+        self.assertTrue(form.submit())
 
         self.wait()
 
@@ -118,8 +119,8 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
 
         # Open add subscription form
-        self.wd.find(link_text='Subscriptions').click()
-        self.wd.find(link_text='Add subscription').click()
+        self.assertTrue(self.wd.find(link_text='Subscriptions').click())
+        self.assertTrue(self.wd.find(link_text='Add subscription').click())
 
         self.assertEquals(self.wd.title,
             "Add subscription | Django site admin")
@@ -133,7 +134,7 @@ class SeleniumAdminTests(LiveServerTestCase):
         form.find(name='subscribed').click()
 
         # Submit the form
-        form.submit()
+        self.assertTrue(form.submit())
 
         self.wait()
 
@@ -151,8 +152,8 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
 
         # Open add form
-        self.wd.find(link_text='Messages').click()
-        self.wd.find(link_text='Add message').click()
+        self.assertTrue(self.wd.find(link_text='Messages').click())
+        self.assertTrue(self.wd.find(link_text='Add message').click())
 
         self.assertEquals(self.wd.title,
             "Add message | Django site admin")
@@ -180,7 +181,7 @@ class SeleniumAdminTests(LiveServerTestCase):
             'Test text 2')
 
         # Submit the form
-        form.submit()
+        self.assertTrue(form.submit())
 
         self.wait()
 
