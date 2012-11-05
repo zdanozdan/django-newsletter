@@ -21,7 +21,7 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.wd = WebDriver()
+        cls.wd = WebDriver(wait=True)
         super(SeleniumAdminTests, cls).setUpClass()
 
     @classmethod
@@ -38,7 +38,9 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.admin.is_superuser = True
         self.admin.save()
 
-        # Log in as admin
+    def test_login(self):
+        """ Test whether login succeeded. """
+
         self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
 
         self.assertEqual("Log in | Django site admin",
@@ -51,14 +53,14 @@ class SeleniumAdminTests(LiveServerTestCase):
 
         self.wd.find(xpath='//input[@value="Log in"]').click()
 
-    def test_login(self):
-        """ Test whether login succeeded. """
-
         self.assertEqual("Site administration | Django site admin",
             self.wd.title)
 
     def test_modules(self):
         """ Test for presence of admin modules. """
+
+        # Make sure we're logged in first
+        self.test_login()
 
         self.wd.find(link_text='Newsletter')
 
@@ -71,6 +73,9 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     def test_addnewsletter(self):
         """ Test adding a newsletter. """
+
+        # Make sure we're logged in first
+        self.test_login()
 
         # Go to newsletters view
         self.wd.find(link_text='Newsletters').click()
