@@ -92,9 +92,37 @@ class SeleniumAdminTests(LiveServerTestCase):
         form.find(name='email').send_keys('test@test.com')
         form.find(name='sender').send_keys('Test sender')
 
-        #form.find(name='site').
+        # Submit the form
+        form.submit()
+
+        # Confirm save result
+        self.assertTrue(self.wd.find(text_contains='added successfully'))
+        self.assertTrue(self.wd.find(link_text='Test newsletter'))
+
+    def test_addsubscription(self):
+        """ Test adding a subscription to a newsletter. """
+
+        # Make sure a newsletter is created
+        self.test_addnewsletter()
+
+        # Go back to main admin page
+        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+
+        # Open add subscription form
+        self.wd.find(link_text='Subscriptions').click()
+        self.wd.find(link_text='Add subscription').click()
+
+        # Fill in form
+        form = self.wd.find(tag_name='form')
+        form.find(name='name_field').send_keys('Test subscriber')
+        form.find(name='email_field').send_keys('test_subscriber@test.com')
+
+        form.find(name='newsletter').find(text='Test newsletter').click()
+        form.find(name='subscribed').click()
 
         # Submit the form
         form.submit()
 
-        self.wd.find(text='added successfully')
+        # Confirm save results
+        self.assertTrue(self.wd.find(text_contains='added successfully'))
+        self.assertTrue(self.wd.find(link_text='Test subscriber'))
