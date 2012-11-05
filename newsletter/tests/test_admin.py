@@ -57,8 +57,6 @@ class SeleniumAdminTests(LiveServerTestCase):
             print 'logged in'
 
         print self.wd.title
-        self.assertEquals('Site administration | Django site admin',
-            self.wd.title)
 
     def wait(self):
         """ Make sure we give the server time to render the page. """
@@ -72,17 +70,17 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.assertEqual("Site administration | Django site admin",
             self.wd.title)
 
-    # def test_modules(self):
-    #     """ Test for presence of admin modules. """
+    def test_modules(self):
+        """ Test for presence of admin modules. """
 
-    #     self.assertTrue(self.wd.find(link_text='Newsletter'))
+        self.assertTrue(self.wd.find(link_text='Newsletter'))
 
-    #     self.assertTrue(self.wd.find(link_text='Newsletter'))
-    #     self.assertTrue(self.wd.find(link_text='E-mail templates'))
-    #     self.assertTrue(self.wd.find(link_text='Messages'))
-    #     self.assertTrue(self.wd.find(link_text='Newsletters'))
-    #     self.assertTrue(self.wd.find(link_text='Submissions'))
-    #     self.assertTrue(self.wd.find(link_text='Subscriptions'))
+        self.assertTrue(self.wd.find(link_text='Newsletter'))
+        self.assertTrue(self.wd.find(link_text='E-mail templates'))
+        self.assertTrue(self.wd.find(link_text='Messages'))
+        self.assertTrue(self.wd.find(link_text='Newsletters'))
+        self.assertTrue(self.wd.find(link_text='Submissions'))
+        self.assertTrue(self.wd.find(link_text='Subscriptions'))
 
     # def test_addnewsletter(self):
     #     """ Test adding a newsletter. """
