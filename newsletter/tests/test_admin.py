@@ -39,7 +39,6 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.admin.is_superuser = True
         self.admin.save()
 
-
     def wait(self):
         """ Make sure we give the server time to render the page. """
 
@@ -189,3 +188,65 @@ class SeleniumAdminTests(LiveServerTestCase):
         # Confirm save results
         self.assertTrue(self.wd.find(text_contains='added successfully'))
         self.assertTrue(self.wd.find(link_text='Test message'))
+
+    def test_banana(self):
+        """ Test previewing a message and creating submission. """
+
+        # Create a message first
+        self.test_addmessage()
+
+        # Create a subscription
+        # Go back to main admin page
+        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+
+        # Open add subscription form
+        self.assertTrue(self.wd.find(link_text='Subscriptions').click())
+        self.assertTrue(self.wd.find(link_text='Add subscription').click())
+
+        # Fill in form
+        form = self.wd.find(tag_name='form')
+        form.find(name='name_field').send_keys('Test subscriber')
+        form.find(name='email_field').send_keys('test_subscriber@test.com')
+
+        form.find(name='newsletter').find(text='Test newsletter').click()
+        form.find(name='subscribed').click()
+
+        # Submit the form
+        self.assertTrue(form.submit())
+
+        self.wait()
+
+        # Go back to main admin page
+        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+
+        # Open change form
+        self.assertTrue(self.wd.find(link_text='Messages').click())
+        self.assertTrue(self.wd.find(link_text='Test message').click())
+
+        self.assertEquals(self.wd.title,
+            "Change message | Django site admin")
+
+        self.assertTrue(self.wd.find(link_text='Preview').click())
+        self.assertEquals(self.wd.title,
+            "Preview message | Django site admin")
+        self.assertTrue(self.wd.find(text_contains='Test message'))
+        self.assertTrue(self.wd.find(text_contains='Test newsletter'))
+
+        # Create a submission
+        self.assertTrue(self.wd.find(link_text='Create submission').click())
+        self.assertEquals(self.wd.title,
+            "Change submission | Django site admin")
+
+        # Save submission
+        self.assertTrue(self.wd.find(tag_name='form').submit())
+
+        # Confirm save results
+        self.assertTrue(self.wd.find(text_contains='successfully'))
+
+        # Go back to submission
+        self.assertTrue(self.wd.find(link_text='Test message').click())
+
+        # Confirm presence of test submission
+        self.assertEquals(
+            self.wd.find(name='subscriptions').find(tag_name='option').text,
+            u'Test subscriber <test_subscriber@test.com> to Test newsletter')
