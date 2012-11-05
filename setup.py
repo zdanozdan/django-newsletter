@@ -37,7 +37,7 @@ except:
 # These test dependencies are default
 tests_require = [
     'django-setuptest',
-    'selenium'
+    'webdriverplus'
 ]
 
 # Additional test dependencies

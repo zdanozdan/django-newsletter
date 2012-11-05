@@ -7,8 +7,7 @@ if django.VERSION[0] == 1 and django.VERSION[1] == 3:
 else:
     from django.test import LiveServerTestCase
 
-from selenium.webdriver.firefox.webdriver import WebDriver
-from selenium.webdriver.support.wait import WebDriverWait
+from webdriverplus import WebDriver
 
 
 class SeleniumAdminTests(LiveServerTestCase):
@@ -22,39 +21,37 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.selenium = WebDriver()
+        cls.wd = WebDriver()
         super(SeleniumAdminTests, cls).setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        cls.selenium.quit()
+        cls.wd.quit()
         super(SeleniumAdminTests, cls).tearDownClass()
 
     def setUp(self):
         """ Make sure we've got a superuser available. """
-        admin = User.objects.create_user('test', 'test@testers.com', 'test')
-        admin.is_staff = True
-        admin.is_superuser = True
-        admin.save()
+
+        self.admin = \
+            User.objects.create_user('test', 'test@testers.com', 'test')
+        self.admin.is_staff = True
+        self.admin.is_superuser = True
+        self.admin.save()
 
     def test_login(self):
         """ Attempt admin login. """
 
-        self.selenium.get('%s%s' % (self.live_server_url, '/admin/'))
+        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
 
         self.assertEqual("Log in | Django site admin",
-            self.selenium.title)
+            self.wd.title)
 
-        username_input = self.selenium.find_element_by_name("username")
+        username_input = self.wd.find(name="username")
         username_input.send_keys('test')
-        password_input = self.selenium.find_element_by_name("password")
+        password_input = self.wd.find(name="password")
         password_input.send_keys('test')
 
-        # Wait until the response is received
-        WebDriverWait(self.selenium, self.timeout).until(
-            lambda driver: driver.find_element_by_tag_name('body'))
-
-        self.selenium.find_element_by_xpath('//input[@value="Log in"]').click()
+        self.wd.find(xpath='//input[@value="Log in"]').click()
 
         self.assertEqual("Site administration | Django site admin",
-            self.selenium.title)
+            self.wd.title)
