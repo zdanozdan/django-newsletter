@@ -33,29 +33,33 @@ class SeleniumAdminTests(LiveServerTestCase):
     def setUp(self):
         """ Make sure we've got a superuser available. """
 
-        # Create admin user
         self.admin = \
             User.objects.create_user('test', 'test@testers.com', 'test')
         self.admin.is_staff = True
         self.admin.is_superuser = True
         self.admin.save()
 
-        # Log in as admin user
         self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
-
-        self.assertEqual("Log in | Django site admin",
-            self.wd.title)
-
-        username_input = self.wd.find(name="username")
-        username_input.send_keys('test')
-        password_input = self.wd.find(name="password")
-        password_input.send_keys('test')
-
-        self.wd.find(xpath='//input[@value="Log in"]').click()
-
         self.wait()
 
+        # Conditional admin login
+        if self.wd.title == 'Log in | Django site admin':
+            print 'logging in'
+            username_input = self.wd.find(name="username")
+            username_input.send_keys('test')
+            password_input = self.wd.find(name="password")
+            password_input.send_keys('test')
+
+            self.wd.find(xpath='//input[@value="Log in"]').click()
+
+            self.wait()
+
+        self.assertEquals('Site administration | Django site admin',
+            self.wd.title)
+
     def wait(self):
+        """ Make sure we give the server time to render the page. """
+
         WebDriverWait(self.wd, 10).until(
             lambda driver: driver.find_element_by_tag_name('body'))
 
