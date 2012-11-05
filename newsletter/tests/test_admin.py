@@ -62,7 +62,7 @@ class SeleniumAdminTests(LiveServerTestCase):
         # Make sure we're logged in first
         self.test_login()
 
-        self.wd.find(link_text='Newsletter')
+        self.assertTrue(self.wd.find(link_text='Newsletter'))
 
         self.assertTrue(self.wd.find(link_text='Newsletter'))
         self.assertTrue(self.wd.find(link_text='E-mail templates'))
