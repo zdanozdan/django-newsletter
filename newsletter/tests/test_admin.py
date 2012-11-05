@@ -8,6 +8,7 @@ else:
     from django.test import LiveServerTestCase
 
 from webdriverplus import WebDriver
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class SeleniumAdminTests(LiveServerTestCase):
@@ -21,7 +22,7 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.wd = WebDriver(wait=10)
+        cls.wd = WebDriver()
         super(SeleniumAdminTests, cls).setUpClass()
 
     @classmethod
@@ -38,6 +39,10 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.admin.is_superuser = True
         self.admin.save()
 
+    def wait(self):
+        WebDriverWait(self.wd, 10).until(
+            lambda driver: driver.find_element_by_tag_name('body'))
+
     def test_login(self):
         """ Test whether login succeeded. """
 
@@ -52,6 +57,8 @@ class SeleniumAdminTests(LiveServerTestCase):
         password_input.send_keys('test')
 
         self.wd.find(xpath='//input[@value="Log in"]').click()
+
+        self.wait()
 
         self.assertEqual("Site administration | Django site admin",
             self.wd.title)
@@ -95,6 +102,8 @@ class SeleniumAdminTests(LiveServerTestCase):
         # Submit the form
         form.submit()
 
+        self.wait()
+
         # Confirm save result
         self.assertTrue(self.wd.find(text_contains='added successfully'))
         self.assertTrue(self.wd.find(link_text='Test newsletter'))
@@ -125,6 +134,8 @@ class SeleniumAdminTests(LiveServerTestCase):
 
         # Submit the form
         form.submit()
+
+        self.wait()
 
         # Confirm save results
         self.assertTrue(self.wd.find(text_contains='added successfully'))
@@ -170,6 +181,8 @@ class SeleniumAdminTests(LiveServerTestCase):
 
         # Submit the form
         form.submit()
+
+        self.wait()
 
         # Confirm save results
         self.assertTrue(self.wd.find(text_contains='added successfully'))
