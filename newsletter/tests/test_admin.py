@@ -54,7 +54,9 @@ class SeleniumAdminTests(LiveServerTestCase):
                 self.wd.find(xpath='//input[@value="Log in"]').click())
 
             self.wait()
+            print 'logged in'
 
+        print self.wd.title
         self.assertEquals('Site administration | Django site admin',
             self.wd.title)
 
@@ -62,7 +64,7 @@ class SeleniumAdminTests(LiveServerTestCase):
         """ Make sure we give the server time to render the page. """
 
         WebDriverWait(self.wd, 10).until(
-            lambda driver: driver.find_element_by_tag_name('body'))
+            lambda driver: driver.find(tag_name='body'))
 
     def test_login(self):
         """ Test whether login succeeded. """
@@ -70,121 +72,121 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.assertEqual("Site administration | Django site admin",
             self.wd.title)
 
-    def test_modules(self):
-        """ Test for presence of admin modules. """
+    # def test_modules(self):
+    #     """ Test for presence of admin modules. """
 
-        self.assertTrue(self.wd.find(link_text='Newsletter'))
+    #     self.assertTrue(self.wd.find(link_text='Newsletter'))
 
-        self.assertTrue(self.wd.find(link_text='Newsletter'))
-        self.assertTrue(self.wd.find(link_text='E-mail templates'))
-        self.assertTrue(self.wd.find(link_text='Messages'))
-        self.assertTrue(self.wd.find(link_text='Newsletters'))
-        self.assertTrue(self.wd.find(link_text='Submissions'))
-        self.assertTrue(self.wd.find(link_text='Subscriptions'))
+    #     self.assertTrue(self.wd.find(link_text='Newsletter'))
+    #     self.assertTrue(self.wd.find(link_text='E-mail templates'))
+    #     self.assertTrue(self.wd.find(link_text='Messages'))
+    #     self.assertTrue(self.wd.find(link_text='Newsletters'))
+    #     self.assertTrue(self.wd.find(link_text='Submissions'))
+    #     self.assertTrue(self.wd.find(link_text='Subscriptions'))
 
-    def test_addnewsletter(self):
-        """ Test adding a newsletter. """
+    # def test_addnewsletter(self):
+    #     """ Test adding a newsletter. """
 
-        # Go to newsletters view
-        self.assertTrue(self.wd.find(link_text='Newsletters').click())
-        self.assertEquals(self.wd.title,
-            "Select newsletter to change | Django site admin")
+    #     # Go to newsletters view
+    #     self.assertTrue(self.wd.find(link_text='Newsletters').click())
+    #     self.assertEquals(self.wd.title,
+    #         "Select newsletter to change | Django site admin")
 
-        self.wd.find(link_text='Add newsletter').click()
-        self.assertEquals(self.wd.title,
-            "Add newsletter | Django site admin")
+    #     self.wd.find(link_text='Add newsletter').click()
+    #     self.assertEquals(self.wd.title,
+    #         "Add newsletter | Django site admin")
 
-        # Fill in the newsletter form
-        form = self.wd.find(tag_name='form')
-        form.find(name='title').send_keys('Test newsletter')
-        form.find(name='email').send_keys('test@test.com')
-        form.find(name='sender').send_keys('Test sender')
+    #     # Fill in the newsletter form
+    #     form = self.wd.find(tag_name='form')
+    #     form.find(name='title').send_keys('Test newsletter')
+    #     form.find(name='email').send_keys('test@test.com')
+    #     form.find(name='sender').send_keys('Test sender')
 
-        # Submit the form
-        self.assertTrue(form.submit())
+    #     # Submit the form
+    #     self.assertTrue(form.submit())
 
-        self.wait()
+    #     self.wait()
 
-        # Confirm save result
-        self.assertTrue(self.wd.find(text_contains='added successfully'))
-        self.assertTrue(self.wd.find(link_text='Test newsletter'))
+    #     # Confirm save result
+    #     self.assertTrue(self.wd.find(text_contains='added successfully'))
+    #     self.assertTrue(self.wd.find(link_text='Test newsletter'))
 
-    def test_addsubscription(self):
-        """ Test adding a subscription to a newsletter. """
+    # def test_addsubscription(self):
+    #     """ Test adding a subscription to a newsletter. """
 
-        # Make sure a newsletter is created
-        self.test_addnewsletter()
+    #     # Make sure a newsletter is created
+    #     self.test_addnewsletter()
 
-        # Go back to main admin page
-        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+    #     # Go back to main admin page
+    #     self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
 
-        # Open add subscription form
-        self.assertTrue(self.wd.find(link_text='Subscriptions').click())
-        self.assertTrue(self.wd.find(link_text='Add subscription').click())
+    #     # Open add subscription form
+    #     self.assertTrue(self.wd.find(link_text='Subscriptions').click())
+    #     self.assertTrue(self.wd.find(link_text='Add subscription').click())
 
-        self.assertEquals(self.wd.title,
-            "Add subscription | Django site admin")
+    #     self.assertEquals(self.wd.title,
+    #         "Add subscription | Django site admin")
 
-        # Fill in form
-        form = self.wd.find(tag_name='form')
-        form.find(name='name_field').send_keys('Test subscriber')
-        form.find(name='email_field').send_keys('test_subscriber@test.com')
+    #     # Fill in form
+    #     form = self.wd.find(tag_name='form')
+    #     form.find(name='name_field').send_keys('Test subscriber')
+    #     form.find(name='email_field').send_keys('test_subscriber@test.com')
 
-        form.find(name='newsletter').find(text='Test newsletter').click()
-        form.find(name='subscribed').click()
+    #     form.find(name='newsletter').find(text='Test newsletter').click()
+    #     form.find(name='subscribed').click()
 
-        # Submit the form
-        self.assertTrue(form.submit())
+    #     # Submit the form
+    #     self.assertTrue(form.submit())
 
-        self.wait()
+    #     self.wait()
 
-        # Confirm save results
-        self.assertTrue(self.wd.find(text_contains='added successfully'))
-        self.assertTrue(self.wd.find(link_text='Test subscriber'))
+    #     # Confirm save results
+    #     self.assertTrue(self.wd.find(text_contains='added successfully'))
+    #     self.assertTrue(self.wd.find(link_text='Test subscriber'))
 
-    def test_addmessage(self):
-        """ Test adding a message to a newsletter. """
+    # def test_addmessage(self):
+    #     """ Test adding a message to a newsletter. """
 
-        # Make sure a newsletter is created
-        self.test_addnewsletter()
+    #     # Make sure a newsletter is created
+    #     self.test_addnewsletter()
 
-        # Go back to main admin page
-        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+    #     # Go back to main admin page
+    #     self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
 
-        # Open add form
-        self.assertTrue(self.wd.find(link_text='Messages').click())
-        self.assertTrue(self.wd.find(link_text='Add message').click())
+    #     # Open add form
+    #     self.assertTrue(self.wd.find(link_text='Messages').click())
+    #     self.assertTrue(self.wd.find(link_text='Add message').click())
 
-        self.assertEquals(self.wd.title,
-            "Add message | Django site admin")
+    #     self.assertEquals(self.wd.title,
+    #         "Add message | Django site admin")
 
-        # Fill in form
-        form = self.wd.find(tag_name='form')
-        form.find(name='title').send_keys('Test message')
-        form.find(name='newsletter').find(text='Test newsletter').click()
+    #     # Fill in form
+    #     form = self.wd.find(tag_name='form')
+    #     form.find(name='title').send_keys('Test message')
+    #     form.find(name='newsletter').find(text='Test newsletter').click()
 
-        # Setup the first article
-        form.find(name='articles-0-title').click().send_keys(
-            'Test article title 1')
-        form.find(name='articles-0-text').click().send_keys(
-            'Test text 1')
+    #     # Setup the first article
+    #     form.find(name='articles-0-title').click().send_keys(
+    #         'Test article title 1')
+    #     form.find(name='articles-0-text').click().send_keys(
+    #         'Test text 1')
 
-        # Open hidden link tab and fill in URL
-        form.find(id='fieldsetcollapser0').click()
-        form.find(name='articles-0-url').click().send_keys(
-            'http://www.google.com')
+    #     # Open hidden link tab and fill in URL
+    #     form.find(id='fieldsetcollapser0').click()
+    #     form.find(name='articles-0-url').click().send_keys(
+    #         'http://www.google.com')
 
-        # Setup the second article
-        form.find(name='articles-1-title').click().send_keys(
-            'Test article title 2')
-        form.find(name='articles-1-text').click().send_keys(
-            'Test text 2')
+    #     # Setup the second article
+    #     form.find(name='articles-1-title').click().send_keys(
+    #         'Test article title 2')
+    #     form.find(name='articles-1-text').click().send_keys(
+    #         'Test text 2')
 
-        # Submit the form
-        self.assertTrue(form.submit())
+    #     # Submit the form
+    #     self.assertTrue(form.submit())
 
-        self.wait()
+    #     self.wait()
 
-        # Confirm save results
-        self.assertTrue(self.wd.find(text_contains='added successfully'))
-        self.assertTrue(self.wd.find(link_text='Test message'))
+    #     # Confirm save results
+    #     self.assertTrue(self.wd.find(text_contains='added successfully'))
+    #     self.assertTrue(self.wd.find(link_text='Test message'))
