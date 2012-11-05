@@ -70,3 +70,31 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.assertTrue(self.wd.find(link_text='Newsletters'))
         self.assertTrue(self.wd.find(link_text='Submissions'))
         self.assertTrue(self.wd.find(link_text='Subscriptions'))
+
+    def test_addnewsletter(self):
+        """ Test adding a newsletter. """
+
+        # Make sure we're logged in first
+        self.test_login()
+
+        # Go to newsletters view
+        self.wd.find(link_text='Newsletters').click()
+        self.assertEquals(self.wd.title,
+            "Select newsletter to change | Django site admin")
+
+        self.wd.find(link_text='Add newsletter').click()
+        self.assertEquals(self.wd.title,
+            "Add newsletter | Django site admin")
+
+        # Fill in the newsletter form
+        form = self.wd.find(tag_name='form')
+        form.find(name='title').send_keys('Test newsletter')
+        form.find(name='email').send_keys('test@test.com')
+        form.find(name='sender').send_keys('Test sender')
+
+        #form.find(name='site').
+
+        # Submit the form
+        form.submit()
+
+        self.wd.find(text='added successfully')
