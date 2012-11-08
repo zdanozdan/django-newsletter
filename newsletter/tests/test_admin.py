@@ -31,13 +31,32 @@ class SeleniumAdminTests(LiveServerTestCase):
         super(SeleniumAdminTests, cls).tearDownClass()
 
     def setUp(self):
-        """ Make sure we've got a superuser available. """
+        """ Make sure we're logged in as a superuser. """
 
         self.admin = \
             User.objects.create_user('test', 'test@testers.com', 'test')
         self.admin.is_staff = True
         self.admin.is_superuser = True
         self.admin.save()
+
+        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
+        self.wait()
+
+        # Conditional admin login
+        if 'Log in' in self.wd.title:
+            print 'logging in'
+            username_input = self.wd.find(name="username")
+            username_input.send_keys('test')
+            password_input = self.wd.find(name="password")
+            password_input.send_keys('test')
+
+            self.assertTrue(
+                self.wd.find(xpath='//input[@value="Log in"]').click())
+
+            self.wait()
+            print 'logged in'
+
+        print self.wd.title
 
     def wait(self):
         """ Make sure we give the server time to render the page. """
@@ -48,28 +67,11 @@ class SeleniumAdminTests(LiveServerTestCase):
     def test_login(self):
         """ Test whether login succeeded. """
 
-        self.wd.get('%s%s' % (self.live_server_url, '/admin/'))
-
-        username_input = self.wd.find(name="username")
-        self.assertTrue(username_input)
-        username_input.send_keys('test')
-
-        password_input = self.wd.find(name="password")
-        self.assertTrue(password_input)
-        password_input.send_keys('test')
-
-        self.assertTrue(
-            self.wd.find(xpath='//input[@value="Log in"]').click())
-
-        self.wait()
-
         self.assertEquals('Site administration | Django site admin',
             self.wd.title)
 
     def test_modules(self):
         """ Test for presence of admin modules. """
-
-        self.test_login()
 
         self.assertTrue(self.wd.find(link_text='Newsletter'))
 
@@ -82,8 +84,6 @@ class SeleniumAdminTests(LiveServerTestCase):
 
     def test_addnewsletter(self):
         """ Test adding a newsletter. """
-
-        self.test_login()
 
         # Go to newsletters view
         self.assertTrue(self.wd.find(link_text='Newsletters').click())
@@ -250,3 +250,14 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.assertEquals(
             self.wd.find(name='subscriptions').find(tag_name='option').text,
             u'Test subscriber <test_subscriber@test.com> to Test newsletter')
+
+    def test_zlatest(self):
+        """
+        Somehow, due to an error in the teardown code, the database does not
+        seem to be cleaned up *after* but only *before* these tests.
+
+        Hence, we need a test method that's being run last, before performing
+        other tests which assume a clean database.
+        """
+
+        pass
