@@ -42,7 +42,7 @@ class SeleniumAdminTests(LiveServerTestCase):
     def wait(self):
         """ Make sure we give the server time to render the page. """
 
-        WebDriverWait(self.wd, 10).until(
+        WebDriverWait(self.wd, self.timeout).until(
             lambda driver: driver.find(tag_name='body'))
 
     def test_login(self):
@@ -189,7 +189,7 @@ class SeleniumAdminTests(LiveServerTestCase):
         self.assertTrue(self.wd.find(text_contains='added successfully'))
         self.assertTrue(self.wd.find(link_text='Test message'))
 
-    def test_banana(self):
+    def test_previewaddsubmission(self):
         """ Test previewing a message and creating submission. """
 
         # Create a message first
