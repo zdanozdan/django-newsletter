@@ -1,10 +1,6 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import random
-
-from datetime import datetime
-
 from django.db import models
 from django.db.models import permalink
 
@@ -12,8 +8,6 @@ from django.template import Template, Context
 
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ugettext
-
-from django.utils.hashcompat import sha_constructor
 
 from django.core.mail import EmailMultiAlternatives
 
@@ -24,21 +18,9 @@ from django.contrib.auth.models import User
 
 from django.conf import settings
 
+from sorl.thumbnail import ImageField
 
-def make_activation_code():
-    """ Generate a unique activation code. """
-    random_string = str(random.random())
-    random_digest = sha_constructor(random_string).hexdigest()[:5]
-    time_string = str(datetime.now().microsecond)
-
-    combined_string = random_digest + time_string
-
-    return sha_constructor(combined_string).hexdigest()
-
-
-def get_default_sites():
-    """ Get a list of id's for all sites; the default for newsletters. """
-    return [site.id for site in Site.objects.all()]
+from .utils import now, make_activation_code, get_default_sites
 
 
 class EmailTemplate(models.Model):
@@ -59,8 +41,7 @@ class EmailTemplate(models.Model):
         assert action in ['subscribe', 'unsubscribe', 'update', 'message'], \
             'Unknown action %s' % action
 
-        # TODO: Remove eval here (or: anywhere)
-        myemail = eval('newsletter.%s_template' % action)
+        myemail = getattr(newsletter, '%s_template' % action)
 
         if myemail.html:
             # If HTML available, return (subject, text, html) tuple
@@ -136,12 +117,10 @@ class Newsletter(models.Model):
         default=True, verbose_name=_('visible'), db_index=True
     )
 
-    # Use this to automatically filter the current site
-    on_site = CurrentSiteManager()
+    objects = models.Manager()
 
-    # TODO: Remove this. It is related to issue #4
-    # https://github.com/dokterbob/django-newsletter/issues/4
-    objects = on_site
+    # Automatically filter the current site
+    on_site = CurrentSiteManager()
 
     subscribe_template = models.ForeignKey(
         'EmailTemplate',
@@ -270,7 +249,7 @@ class Subscription(models.Model):
     def subscribe(self):
         logger.debug(u'Subscribing subscription %s.', self)
 
-        self.subscribe_date = datetime.now()
+        self.subscribe_date = now()
         self.subscribed = True
         self.unsubscribed = False
 
@@ -279,7 +258,7 @@ class Subscription(models.Model):
 
         self.subscribed = False
         self.unsubscribed = True
-        self.unsubscribe_date = datetime.now()
+        self.unsubscribe_date = now()
 
     def save(self, *args, **kwargs):
         assert self.user or self.email_field, \
@@ -333,7 +312,7 @@ class Subscription(models.Model):
 
     newsletter = models.ForeignKey('Newsletter', verbose_name=_('newsletter'))
 
-    create_date = models.DateTimeField(editable=False, default=datetime.now)
+    create_date = models.DateTimeField(editable=False, default=now)
 
     activation_code = models.CharField(
         verbose_name=_('activation code'), max_length=40,
@@ -478,13 +457,9 @@ class Article(models.Model):
     )
 
     # Make this a foreign key for added elegance
-    image = models.ImageField(
+    image = ImageField(
         upload_to='newsletter/images/%Y/%m/%d', blank=True, null=True,
         verbose_name=_('image')
-    )
-    thumb = models.CharField(
-        max_length=600, verbose_name=_('thumbnail url'), editable=False,
-        null=True, blank=True
     )
 
     # Message this article is associated with
@@ -500,69 +475,6 @@ class Article(models.Model):
 
     def __unicode__(self):
         return self.title
-
-    def get_prev(self):
-        """ Return the previous message according to sortorder. """
-
-        try:
-            qs = Article.objects.all().order_by('-sortorder')
-            article = qs.filter(sortorder__lt=self.sortorder)[0]
-
-            logger.debug(
-                u'Found prev %d of %d.',
-                article.sortorder, self.sortorder
-            )
-
-            return article
-
-        except IndexError:
-            logger.debug('No previous found.')
-
-    def get_next(self):
-        """ Return the next message according to sortorder. """
-
-        try:
-            qs = Article.objects.all().order_by('-sortorder')
-            article = qs.filter(sortorder__gt=self.sortorder)[0]
-
-            logger.debug(
-                u'Found next %d of %d.',
-                article.sortorder, self.sortorder
-            )
-
-            return article
-
-        except IndexError:
-            logger.debug('No previous found.')
-
-    # This belongs elsewhere
-    def thumbnail(self):
-        """
-        Display thumbnail-size image of ImageField named src
-        Assumes images are not very large (i.e. no manipulation of the
-        image is done on backend).
-
-        Requires constant named MAX_THUMB_LENGTH to limit longest axis
-
-        TODO: Replace by sorl-thumbnail's functionality.
-        """
-        MAX_THUMB_LENGTH = 200
-        max_img_length = max(self.get_image_width(), self.get_image_height())
-
-        ratio = (
-            max_img_length > MAX_THUMB_LENGTH and
-            float(max_img_length) / MAX_THUMB_LENGTH or
-            1
-        )
-
-        thumb_width = self.get_image_width() / ratio
-        thumb_height = self.get_image_height() / ratio
-        return '<img src="%s" width="%s" height="%s"/>' % (
-            self.image, thumb_width, thumb_height
-        )
-
-    thumbnail.short_description = _('thumbnail')
-    thumbnail.allow_tags = True
 
 
 class Message(models.Model):
@@ -638,7 +550,7 @@ class Submission(models.Model):
             {'submission': self, 'count': subscriptions.count()}
         )
 
-        assert self.publish_date < datetime.now(), \
+        assert self.publish_date < now(), \
             'Something smells fishy; submission time in future.'
 
         self.sending = True
@@ -704,7 +616,7 @@ class Submission(models.Model):
     def submit_queue(cls):
         todo = cls.objects.filter(
             prepared=True, sent=False, sending=False,
-            publish_date__lt=datetime.now()
+            publish_date__lt=now()
         )
 
         for submission in todo:
@@ -761,7 +673,7 @@ class Submission(models.Model):
 
     publish_date = models.DateTimeField(
         verbose_name=_('publication date'), blank=True, null=True,
-        default=datetime.now(), db_index=True
+        default=now(), db_index=True
     )
     publish = models.BooleanField(
         default=True, verbose_name=_('publish'),

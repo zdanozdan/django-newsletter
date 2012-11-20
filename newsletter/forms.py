@@ -1,12 +1,11 @@
 from django.utils.translation import ugettext_lazy as _
 
 from django import forms
-from django.forms import widgets
-from django.forms.util import ValidationError, ErrorList
+from django.forms.util import ValidationError
 
 from django.contrib.auth.models import User
 
-from models import Subscription
+from .models import Subscription
 
 
 class NewsletterForm(forms.ModelForm):
@@ -51,15 +50,13 @@ class SubscribeRequestForm(NewsletterForm):
 
         # Check whether we should be subscribed to as a user
         try:
-            # TODO: This error contains an information leak.
-            # Which should be fixed in the future.
             user = User.objects.get(email__exact=data)
 
-            raise ValidationError(
-                _("This e-mail address belongs to the user '%(username)s'. "
-                  "Please log in as that user and try again.")
-                % {'username': user.username}
-            )
+            raise ValidationError(_(
+                "The e-mail address '%(email)s' belongs to a user with an "
+                "account on this site. Please log in as that user "
+                "and try again."
+            ) % {'email': user.email})
 
         except User.DoesNotExist:
             pass

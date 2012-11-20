@@ -1,15 +1,22 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
+
 import time
 
 from django.core import mail
 
 from django.core.urlresolvers import reverse
 
-from newsletter.models import *
-from newsletter.forms import *
+from ..models import (
+    Newsletter, Subscription, Submission, Message,
+    EmailTemplate, get_default_sites
+)
+from ..forms import SubscribeRequestForm, UpdateForm, UpdateRequestForm
+from ..utils import now
 
-from utils import *
+from .utils import MailTestCase, UserTestCase, WebTestCase, ComparingTestCase
 
+
+# Amount of seconds to wait to test time comparisons in submissions.
 WAIT_TIME = 1
 
 
@@ -172,7 +179,7 @@ class UserNewsletterListTestCase(UserTestCase,
             self.assertContains(response, form['id'])
             self.assertContains(response, form['subscribed'])
 
-    # To finish
+    # TODO
     # def test_update(self):
     #     for n in self.newsletters.filter(visible=True):
     #         response = self.client.post(self.list_url, {'form-0-id': n.id,
@@ -311,7 +318,7 @@ class WebUserSubscribeTestCase(WebSubscribeTestCase,
         subscription.save()
 
         self.assertLessThan(
-            subscription.subscribe_date, datetime.now() + timedelta(seconds=1)
+            subscription.subscribe_date, now() + timedelta(seconds=1)
         )
 
         response = self.client.get(self.unsubscribe_url)
@@ -348,7 +355,7 @@ class WebUserSubscribeTestCase(WebSubscribeTestCase,
         self.assert_(subscription.unsubscribed)
         self.assertLessThan(
             subscription.unsubscribe_date,
-            datetime.now() + timedelta(seconds=1)
+            now() + timedelta(seconds=1)
         )
 
     def test_unsubscribe_twice(self):
@@ -431,7 +438,7 @@ class AnonymousSubscribeTestCase(WebSubscribeTestCase,
         self.assertEquals(Subscription.objects.all().count(), 0)
 
         # Request subscription
-        response = self.client.post(
+        self.client.post(
             self.subscribe_url, {
                 'name_field': 'Test Name',
                 'email_field': 'test@email.com'
@@ -441,7 +448,7 @@ class AnonymousSubscribeTestCase(WebSubscribeTestCase,
         self.assertEquals(Subscription.objects.all().count(), 1)
 
         # Request subscription
-        response = self.client.post(
+        self.client.post(
             self.subscribe_url, {
                 'name_field': 'Test Name',
                 'email_field': 'test@email.com'
@@ -485,8 +492,6 @@ class AnonymousSubscribeTestCase(WebSubscribeTestCase,
         subscription.save()
 
         # Unsubscribe
-        testname2 = 'Test Name2'
-        testemail2 = 'test2@email.com'
         response = self.client.post(
             subscription.unsubscribe_activate_url(), {
                 'name_field': subscription.name,
@@ -657,7 +662,7 @@ class AnonymousSubscribeTestCase(WebSubscribeTestCase,
         self.assertEqual(subscription.name, testname2)
         self.assertEqual(subscription.email, testemail2)
 
-        dt = (datetime.now() - subscription.unsubscribe_date).seconds
+        dt = (now() - subscription.unsubscribe_date).seconds
         self.assertLessThan(dt, 2)
 
     def test_update_request_view(self):

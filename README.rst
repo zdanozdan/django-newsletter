@@ -2,7 +2,7 @@
 django-newsletter
 =================
 
-.. image:: https://secure.travis-ci.org/dokterbob/django-newsletter.png
+.. image:: https://secure.travis-ci.org/dokterbob/django-newsletter.png?branch=master
     :target: http://travis-ci.org/dokterbob/django-newsletter
 
 Newsletter application for the Django web framework.
@@ -48,8 +48,10 @@ Installation
     keep your Python environment somewhat clean.)
 
 #)  Add newsletter and to ``INSTALLED_APPS`` in settings.py and make sure that
-    your favourite rich text widget, some Django contrib dependencies and
-    django-extensions (for the submission jobs) are there as well::
+    your favourite rich text widget (optional), some Django contrib dependencies,
+    `sorl-thumbnail <http://sorl-thumbnail.readthedocs.org/en/latest/installation.html>`_ 
+    and `django-extensions <https://github.com/django-extensions/django-extensions>`_  
+    (the latter is used for the submission jobs) are there as well::
 
 	INSTALLED_APPS = (
 	    'django.contrib.contenttypes',
@@ -57,17 +59,20 @@ Installation
 	    'django.contrib.auth',
 	    'django.contrib.sites',
 	    ...
+	    # Imperavi (or tinymce) rich text editor is optional
 	    'imperavi',
 	    'django_extensions',
+            'sorl.thumbnail',
 	    ...
 	    'newsletter',
 	    ...
 	)
 
-#)  Set the path to your preferred rich text widget (optional). If not set,
-    django-newsletter will fall back to Django's default TextField widget::
+#)  Install and configure your preferred rich text widget (optional).
+    If not set, django-newsletter will fall back to Django's default TextField
+    widget::
 
-	# Using django-imperavi
+	# Using django-imperavi (make sure to update urls.py when installing this)
 	NEWSLETTER_RICHTEXT_WIDGET = "imperavi.widget.ImperaviWidget"
 
         # Using django-tinymce
@@ -110,6 +115,18 @@ Installation
 	@weekly /path/to/my/project/manage.py runjobs weekly
 	@monthly /path/to/my/project/manage.py runjobs monthly
 
+South migrations / upgrading
+============================
+Since 5f79f40, the app makes use of `South <http://south.aeracode.org/>`_ for
+schema migrations. As of this version, using South with django-newsletter
+is the official recommendation and `installing it <http://south.readthedocs.org/en/latest/installation.html>`_ is easy.
+
+When upgrading from a pre-South version of newsletter to a current
+release (in a project for which South has been enabled), you might have to
+fake the initial migration as the DB tables already exist. This can be done
+by running the following command::
+
+	./manage.py migrate newsletter 0001 --fake
 
 Usage
 =====
@@ -128,6 +145,19 @@ Fairly extensive tests are available for internal frameworks, web
 (+10k) has been confirmed to work in multiple production environments. Tests
 for pull req's and the master branch are automatically run through
 `Travis CI <http://travis-ci.org/dokterbob/django-newsletter>`_.
+
+Feedback
+========
+If you find any bugs or have feature request for django-newsletter, don't hesitate to
+open up an issue on `GitHub <https://github.com/dokterbob/django-newsletter/issues>`_
+(but please make sure your issue hasn't been noticed before, finding duplicates is a 
+waste of time). When modifying or adding features to django-newsletter in a fork, be
+sure to let me know what you're building and how you're building it. That way we can
+coordinate whether, when and how it will end up in the main fork and (eventually) an
+official release.
+
+In general: thanks for the support, feedback, patches and code that's been flowing in
+over the years! Django has a truly great community. <3
 
 License
 =======
