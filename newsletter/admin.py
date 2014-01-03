@@ -24,9 +24,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from sorl.thumbnail.admin import AdminImageMixin
 
-from .models import (
-    Newsletter, Subscription, Article, Message, Submission
-)
+from .models import Newsletter, Subscription, Message, List
 
 from django.utils.timezone import now
 
@@ -44,9 +42,12 @@ ICON_URLS = {
 }
 
 
+class ListAdmin(admin.ModelAdmin):
+    pass
+
 class NewsletterAdmin(admin.ModelAdmin):
     list_display = (
-        'title', 'admin_subscriptions', 'admin_messages', 'admin_submissions'
+        'title', 'admin_subscriptions', 'admin_messages'
     )
     prepopulated_fields = {'slug': ('title',)}
 
@@ -64,13 +65,6 @@ class NewsletterAdmin(admin.ModelAdmin):
             (obj.id, ugettext('Subscriptions'))
     admin_subscriptions.allow_tags = True
     admin_subscriptions.short_description = ''
-
-    def admin_submissions(self, obj):
-        return '<a href="../submission/?newsletter__id__exact=%s">%s</a>' % (
-            obj.id, ugettext('Submissions')
-        )
-    admin_submissions.allow_tags = True
-    admin_submissions.short_description = ''
 
 
 class SubmissionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
@@ -182,25 +176,6 @@ if RICHTEXT_WIDGET and RICHTEXT_WIDGET.__name__ == "ImperaviWidget":
         )
 
 
-class ArticleInline(AdminImageMixin, StackedInline):
-    model = Article
-    extra = 2
-    fieldsets = (
-        (None, {
-            'fields': ('title', 'sortorder', 'text')
-        }),
-        (_('Optional'), {
-            'fields': ('url', 'image'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    if RICHTEXT_WIDGET:
-        formfield_overrides = {
-            models.TextField: {'widget': RICHTEXT_WIDGET},
-        }
-
-
 class MessageAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
     save_as = True
     list_display = (
@@ -210,8 +185,6 @@ class MessageAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
     list_filter = ('newsletter', )
     date_hierarchy = 'date_create'
     prepopulated_fields = {'slug': ('title',)}
-
-    inlines = [ArticleInline, ]
 
     """ List extensions """
     def admin_title(self, obj):
@@ -320,12 +293,12 @@ class MessageAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
 class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
     form = SubscriptionAdminForm
     list_display = (
-        'name', 'email', 'admin_newsletter', 'admin_subscribe_date',
+        'name', 'email', 'admin_list', 'admin_subscribe_date',
         'admin_unsubscribe_date', 'admin_status_text', 'admin_status'
     )
     list_display_links = ('name', 'email')
     list_filter = (
-        'newsletter', 'subscribed', 'unsubscribed', 'subscribe_date'
+        'subscribed', 'unsubscribed', 'subscribe_date','list__name',
     )
     search_fields = (
         'name_field', 'email_field', 'user__first_name', 'user__last_name',
@@ -339,12 +312,12 @@ class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
 
 
     """ List extensions """
-    def admin_newsletter(self, obj):
-        return '<a href="../newsletter/%s/">%s</a>' % (
-            obj.newsletter.id, obj.newsletter
+    def admin_list(self, obj):
+        return '<a href="../list/%s/">%s</a>' % (
+            obj.list.id, obj.list
         )
-    admin_newsletter.short_description = ugettext('newsletter')
-    admin_newsletter.allow_tags = True
+    admin_list.short_description = ugettext('list')
+    admin_list.allow_tags = True
 
     def admin_status(self, obj):
         if obj.unsubscribed:
@@ -424,6 +397,10 @@ class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
 
         addresses = request.session['addresses']
         logger.debug('Confirming addresses: %s', addresses)
+        for address in addresses:
+            logger.debug('---------------adress: %s--------------', addresses)
+            
+
         if request.POST:
             form = ConfirmForm(request.POST)
             if form.is_valid():
@@ -473,6 +450,7 @@ class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
 
 
 admin.site.register(Newsletter, NewsletterAdmin)
-admin.site.register(Submission, SubmissionAdmin)
+#admin.site.register(Submission, SubmissionAdmin)
+admin.site.register(List, ListAdmin)
 admin.site.register(Message, MessageAdmin)
 admin.site.register(Subscription, SubscriptionAdmin)
