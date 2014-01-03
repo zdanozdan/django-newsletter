@@ -63,10 +63,7 @@ class SubscribeRequestForm(NewsletterForm):
 
         # Check whether we have already been subscribed to
         try:
-            subscription = Subscription.objects.get(
-                email_field__exact=data,
-                newsletter=self.instance.newsletter
-            )
+            subscription = Subscription.objects.get(email_field__exact=data)
 
             if subscription.subscribed and not subscription.unsubscribed:
                 raise ValidationError(
