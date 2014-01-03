@@ -6,6 +6,7 @@ from django import forms
 
 from django.core.validators import email_re
 
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ugettext
 
@@ -17,21 +18,28 @@ from .models import Subscription, Newsletter, Submission
 
 
 def make_subscription(newsletter, email, name=None):
-    qs = Subscription.objects.filter(
-        newsletter__id=newsletter.id,
-        subscribed=True,
-        email_field__exact=email)
+    #qs = Subscription.objects.filter(
+    #    newsletter__id=newsletter.id,
+        #subscribed=True,
+#        email_field__exact=email)
+
+    q = Q(user__email__exact=email, newsletter__id = newsletter.id) | Q(newsletter__id = newsletter.id, email_field__exact = email)
+    qs = Subscription.objects.filter(q)
 
     if qs.count():
         return None
 
+    #if nothing found create new subscription
     addr = Subscription(subscribed=True)
     addr.newsletter = newsletter
 
-    addr.email_field = email
-
-    if name:
-        addr.name_field = name
+    try:
+        addr.user = User.objects.get(email__exact=email)
+    except:
+        addr.email_field = email
+        if name:
+            addr.name_field = name
+        pass
 
     return addr
 
