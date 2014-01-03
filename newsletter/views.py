@@ -34,7 +34,7 @@ from .forms import (
 
 class NewsletterViewBase(object):
     """ Base class for newsletter views. """
-    queryset = Newsletter.on_site.filter(visible=True)
+    queryset = Newsletter.objects.filter(visible=True)
     allow_empty = False
 
     def get_object(self, queryset=None):
@@ -128,8 +128,7 @@ class NewsletterListView(NewsletterViewBase, ListView):
 class NewsletterMixin(object):
     """ Mixin providing the ability to retrieve a newsletter. """
 
-    def get_newsletter(self,
-            newsletter_slug=None, newsletter_queryset=None, **kwargs):
+    def get_newsletter(self,newsletter_slug=None, newsletter_queryset=None, **kwargs):
         """
         Return the newsletter for the current request.
 
@@ -141,7 +140,7 @@ class NewsletterMixin(object):
             newsletter_slug = self.kwargs['newsletter_slug']
 
         if newsletter_queryset is None:
-            newsletter_queryset = Newsletter.on_site.all()
+            newsletter_queryset = Newsletter.objects.all()
 
         newsletter = get_object_or_404(
             newsletter_queryset, slug=newsletter_slug,
@@ -197,9 +196,7 @@ class SubscribeUserView(ActionUserView):
 
     def get(self, request, *args, **kwargs):
         already_subscribed = False
-        instance = Subscription.objects.get_or_create(
-            newsletter=self.newsletter, user=request.user
-        )[0]
+        instance = Subscription.objects.get_or_create(user=request.user)[0]
 
         if instance.subscribed:
             already_subscribed = True
@@ -235,9 +232,7 @@ class UnsubscribeUserView(ActionUserView):
         not_subscribed = False
 
         try:
-            instance = Subscription.objects.get(
-                newsletter=self.newsletter, user=request.user
-            )
+            instance = Subscription.objects.get(user=request.user)
 
             if not instance.subscribed:
                 not_subscribed = True
@@ -245,11 +240,7 @@ class UnsubscribeUserView(ActionUserView):
                 instance.subscribed = False
                 instance.save()
 
-                messages.success(
-                    request,
-                    _('You have been unsubscribed from %s.') % \
-                        self.newsletter
-                )
+                messages.success(request,_('You have been unsubscribed from %s.') % self.newsletter)
 
                 logger.debug(
                     _('User %(rs)s unsubscribed from %(my_newsletter)s.'), {
@@ -426,7 +417,7 @@ class SubmissionViewBase(NewsletterMixin):
     """ Base class for submission archive views. """
     date_field = 'publish_date'
     allow_empty = True
-    queryset = Submission.objects.filter(publish=True)
+    #queryset = Submission.objects.filter(publish=True)
     slug_field = 'message__slug'
 
     # Specify date element notation
