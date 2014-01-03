@@ -9,7 +9,6 @@ except ImportError:
     from django.utils.hashcompat import sha_constructor as sha1
 
 from django.contrib.sites.models import Site
-
 from datetime import datetime
 
 
