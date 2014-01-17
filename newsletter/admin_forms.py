@@ -14,7 +14,7 @@ from django.conf import settings
 
 from django.template import Template
 
-from .models import Subscription, Newsletter, Submission
+from .models import Subscription, Newsletter,Message
 
 
 def make_subscription(newsletter, email, name=None):
@@ -432,26 +432,17 @@ class SubscriptionAdminForm(forms.ModelForm):
                 'be specified.'))
         return cleaned_data
 
+from tinymce.widgets import TinyMCE
+class MessageAdminForm(forms.ModelForm):
 
-class SubmissionAdminForm(forms.ModelForm):
+    text = forms.CharField(widget=TinyMCE())
+
+    def __init__(self, *args, **kwargs):
+        super(MessageAdminForm, self).__init__(*args, **kwargs)
+
+        self.fields['text'].label = _('HTML Message')
+        #self.fields['plain_text'].label = _('Text Message')
+        #self.fields['text'].widget = forms.Textarea
 
     class Meta:
-        model = Submission
-
-    def clean_publish(self):
-        """
-        Make sure only one submission can be published for each message.
-        """
-        publish = self.cleaned_data['publish']
-
-        if publish:
-            message = self.cleaned_data['message']
-            qs = Submission.objects.filter(publish=True, message=message)
-            if self.instance:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise forms.ValidationError(_(
-                    'This message has already been published in some '
-                    'other submission. Messages can only be published once.'))
-
-        return publish
+        model = Message
