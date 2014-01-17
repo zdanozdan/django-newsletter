@@ -3,12 +3,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse,resolve
 from django.conf import settings
 
 from django.template.response import SimpleTemplateResponse
+from django.template import RequestContext
 
 from django.shortcuts import get_object_or_404
-from django.http import Http404
+from django.shortcuts import render_to_response
+from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 
 from django.views.generic import (
     ListView, DetailView,
@@ -22,33 +25,107 @@ from django.contrib.auth.decorators import login_required
 
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils import translation
 
 from django.forms.models import modelformset_factory
 
-from .models import Newsletter, Subscription, Submission
-from .forms import (
-    SubscribeRequestForm, UserUpdateForm, UpdateRequestForm,
-    UnsubscribeRequestForm, UpdateForm
-)
+from .models import Newsletter, Subscription, Message
+from .forms import ( SubscribeRequestForm, UserUpdateForm, UpdateRequestForm, UnsubscribeRequestForm, UpdateForm )
+from .tables import MessagesTable
+from django_tables2 import RequestConfig
 
+'''Simple views go here '''
+
+def newsletter_list(request):
+    qs = Message.objects.filter(active=True).order_by('-date_create')
+    table = MessagesTable(qs)
+
+    try:
+        u,created = Subscription.objects.get_or_create(user=request.user)
+        f =  UserUpdateForm
+    except:
+        u = None
+        f = SubscribeRequestForm
+
+    form = f(instance=u)
+
+    if request.method == 'POST':
+        form = f(request.POST, instance=u)
+        if form.is_valid():
+            # Everything's allright, let's save
+            form.save()
+            subscription = form.instance
+
+            if not u:
+                #activate language
+                lang = translation.get_language()
+                subscription.send_activation_email(action=request.POST.get('action'),lang=lang)
+                messages.add_message(request,messages.SUCCESS, _(u'Please check your email and follow given link to confirm.'))
+            else:
+                messages.add_message(request,messages.SUCCESS, _(u'Your changes have been saved.'))
+
+            return HttpResponseRedirect(reverse('newsletter_list'))
+
+    RequestConfig(request,paginate={'per_page':25}).configure(table)
+    return render_to_response('newsletter/message_list.html', {
+            'table': table,
+            'form': form,
+            },context_instance=RequestContext(request))
+    
+
+def newsletter_detail(request,newsletter_slug):
+    qs = Message.objects.filter(active=True).order_by('-date_create')
+    table = MessagesTable(qs)
+    m = qs.get(slug=newsletter_slug)
+
+    try:
+        u = Subscription.objects.get(user=request.user)
+        f =  UserUpdateForm
+    except:
+        u = None
+        f = SubscribeRequestForm
+
+    form = f(instance=u)
+
+    RequestConfig(request,paginate={'per_page':25}).configure(table)
+    return render_to_response('newsletter/message_detail.html', {
+            'table': table,
+            'form': form,
+            'message': m,
+            },context_instance=RequestContext(request))
 
 class NewsletterViewBase(object):
     """ Base class for newsletter views. """
-    queryset = Newsletter.objects.filter(visible=True)
+    queryset = Message.objects.filter(active=True)
     allow_empty = False
 
-    def get_object(self, queryset=None):
+    def get_object(self, queryset=None):  
         # This is a workaround for Django 1.3 and should be replaced by
         # the `slug_url_kwarg = 'newsletter_slug'` view attribute as soon
         # as 1.3 support is dropped.
-        self.kwargs['slug'] = self.kwargs['newsletter_slug']
-
-        return super(NewsletterViewBase, self).get_object(queryset)
-
+        #self.kwargs['slug'] = self.kwargs['newsletter_slug']
+        return self.queryset.get(slug=self.kwargs['newsletter_slug'])
 
 class NewsletterDetailView(NewsletterViewBase, DetailView):
-    pass
+    context_object_name = "news_message"
 
+    def get_form(self):
+        try:
+            u = Subscription.objects.get(user=self.request.user)            
+            return UserUpdateForm(instance=u)
+        except:
+            return SubscribeRequestForm()
+
+    def get_context_data(self, **kwargs):
+        context = super(NewsletterDetailView, self).get_context_data(**kwargs)
+        qs = Message.objects.filter(active=True).order_by('-date_create')
+        context['table'] = MessagesTable(qs)
+        context['form'] = self.get_form()
+        return context
+
+
+class MessageDetailView(NewsletterViewBase, DetailView):
+    pass
 
 class NewsletterListView(NewsletterViewBase, ListView):
     """
@@ -67,11 +144,11 @@ class NewsletterListView(NewsletterViewBase, ListView):
 
         if self.request.user.is_authenticated():
             # Add a formset for logged in users.
-            context['formset'] = self.get_formset()
+            context['form'] = self.get_form()
 
         return context
 
-    def get_formset(self):
+    def get_form(self):
         """ Return a formset with newsletters for logged in users, or None. """
 
         # Short-hand variable names
@@ -79,34 +156,27 @@ class NewsletterListView(NewsletterViewBase, ListView):
         request = self.request
         user = request.user
 
-        SubscriptionFormSet = modelformset_factory(
-            Subscription, form=UserUpdateForm, extra=0
-        )
+        #SubscriptionFormSet = modelformset_factory(Subscription, form=UserUpdateForm, extra=0)
+        #form = UserUpdateForm
 
         # Before rendering the formset, subscription objects should
         # already exist.
-        for n in newsletters:
-            Subscription.objects.get_or_create(
-                newsletter=n, user=user
-            )
+        #for n in newsletters:
+        #    Subscription.objects.get_or_create(user=user)
 
-        # Get all subscriptions for use in the formset
-        qs = Subscription.objects.filter(
-            newsletter__in=newsletters, user=user
-        )
+        # Get  subscription for use in the form
+        u = Subscription.objects.get( user=user )
 
         if request.method == 'POST':
             try:
-                formset = SubscriptionFormSet(request.POST, queryset=qs)
+                form = UserUpdateForm(request.POST,instance=u)
 
-                if not formset.is_valid():
+                if not form.is_valid():
                     raise ValidationError('Update form invalid.')
 
                 # Everything's allright, let's save
-                formset.save()
-
-                messages.info(request,
-                    ugettext("Your changes have been saved."))
+                form.save()
+                messages.info(request,ugettext("Your changes have been saved."))
 
             except ValidationError:
                 # Invalid form posted. As there is no way for a user to
@@ -117,12 +187,12 @@ class NewsletterListView(NewsletterViewBase, ListView):
                     exc_info=True, extra={'request': request})
 
                 # Present a pristine form
-                formset = SubscriptionFormSet(queryset=qs)
+                form = UserUpdateForm(instance=u)
 
         else:
-            formset = SubscriptionFormSet(queryset=qs)
+            form = UserUpdateForm(instance=u)
 
-        return formset
+        return form
 
 
 class NewsletterMixin(object):
@@ -152,7 +222,7 @@ class NewsletterMixin(object):
         """ Add newsletter to form kwargs. """
         kwargs = super(NewsletterMixin, self).get_form_kwargs()
 
-        kwargs['newsletter'] = self.newsletter
+        #kwargs['newsletter'] = self.newsletter
 
         return kwargs
 
@@ -160,7 +230,7 @@ class NewsletterMixin(object):
         """ Add newsletter to context. """
         context = super(NewsletterMixin, self).get_context_data(**kwargs)
 
-        context['newsletter'] = self.newsletter
+        #context['newsletter'] = self.newsletter
 
         return context
 
@@ -402,9 +472,9 @@ class UpdateSubscriptionViev(NewsletterMixin, FormView):
         self.action = kwargs['action']
         assert self.action in ['subscribe', 'update', 'unsubscribe']
 
-        self.newsletter = self.get_newsletter(**kwargs)
+        #self.newsletter = self.get_newsletter(**kwargs)
         self.subscription = get_object_or_404(
-            Subscription, newsletter=self.newsletter,
+            Subscription,
             email_field__exact=kwargs['email']
         )
         # activation_code is optional kwarg which defaults to None

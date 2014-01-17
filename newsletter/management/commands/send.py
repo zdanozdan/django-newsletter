@@ -2,44 +2,70 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.mail import EmailMultiAlternatives
 from django.template import Context, TemplateDoesNotExist
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 
-#from optparse import make_option
-from newsletter.models import Subscription,Newsletter,Message
+from optparse import make_option
+from newsletter.models import Subscription,Newsletter,Message,List
 
 class Command(BaseCommand):
-    #args = '<poll_id poll_id ...>'
-    #help = 'Closes the specified poll for voting'
+    # Metadata about this command.
+    option_list = BaseCommand.option_list + (
+        make_option('--newsletter', action='store', help='newsletter name or pk'),
+        make_option('--message', action='store', help='message name or pk'),
+    )
 
-    #option_list = BaseCommand.option_list + (
-    #    make_option('--delete',
-    #                action='store_true',
-    #                dest='delete',
-    #                default=False,
-    #                help='Delete poll instead of closing it'),
-    #    )
-
+    '''
+    So here we need to pass newsletter name and message name or number (id) I guess
+    Same newsletter can have multiple messages and each has identical rendering
+    To change rendering new newsletter has to be created 
+    '''
     def handle(self, *args, **options):
-        print args
-        #print options
+        newsletter_title = options.get('newsletter')
+        message_title = options.get('message')
 
         subscriptions = Subscription.objects.filter(subscribed=True)
-        print subscriptions
+        if not subscriptions:
+            #print "No subscribed users found. Exiting ....."
+            raise Exception("No subscribed users found. Exiting .....")
 
-        newsletter = Newsletter.objects.get(id=1)
-        print newsletter
-        message = Message.objects.get(newsletter=newsletter)
-        print message
+        try:
+            pk = int(newsletter_title)
+            newsletter = Newsletter.objects.get(id=pk)
+        except Newsletter.DoesNotExist:   
+            #print "Newsletter object with ID: '%s' does not exists" % newsletter_title
+            raise Exception("Newsletter object with ID: '%s' does not exists" % newsletter_title)
+        except:                        
+            newsletter = Newsletter.objects.get(title=newsletter_title)
+
+        print "Using newsletter: ", newsletter
+
+        try:
+            pk = int(message_title)
+            message = Message.objects.get(id=pk,newsletter=newsletter)
+        except Message.DoesNotExist:
+            raise Exception("Messages object with ID: '%s' does not exists" % newsletter_title)
+        except:
+            message = Message.objects.get(newsletter=newsletter,title=message_title)
+            
+
+        print "Using message: ", message
 
         (subject_template, text_template, html_template) = newsletter.get_templates('message')
+
+        if newsletter.test_mode:
+            print "!!!!!!!!!!! Test mode, only 'newsletter_tester' group used !!!!!!!!!!!!!!!!!!!!!!!"
+            subscriptions = Subscription.objects.filter(user__groups__name='newsletter_tester')
+            print subscriptions
+            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            #raise Exception("Test mode")
 
         for subscription in subscriptions:
             variable_dict = {
                 'subscription': subscription,
-                #'site': Site.objects.get_current(),
-                #'submission': self,
                 'message': message,
                 'newsletter': newsletter,
-                #'date': self.publish_date,
+                'site': Site.objects.get_current(),
                 'STATIC_URL': settings.STATIC_URL,
                 'MEDIA_URL': settings.MEDIA_URL
                 }
@@ -53,33 +79,17 @@ class Command(BaseCommand):
                 to=[subscription.get_recipient()]
                 )
 
-            print "recipient: "
-            print subscription.get_recipient()
 
             if html_template:
                 escaped_context = Context(variable_dict)
                 message.attach_alternative(html_template.render(escaped_context),"text/html")
 
-                try:
-                    print html_template.render(unescaped_context)
-                    print "send disabled !!!!!!!!!!!!!1"
-                    message.send()
+            try:
+                    #print html_template.render(unescaped_context)
+                    #print "send disabled !!!!!!!!!!!!!1"
+                print "Sending mail to recipient: ",subscription.get_recipient()
+                message.send()
                     
-                except Exception, e:
-                    # TODO: Test coverage for this branch.
-                    print e
-
-        #(subject_template, text_template, html_template) = self.message.newsletter.get_templates('message',self.message.lang)
-
-        #if options['delete']:
-        #    print "DELETE"
-        #for poll_id in args:
-        #    try:
-        #        poll = Poll.objects.get(pk=int(poll_id))
-        #    except Poll.DoesNotExist:
-        #        raise CommandError('Poll "%s" does not exist' % poll_id)
-
-        #    poll.opened = False
-        #    poll.save()
-
-#            self.stdout.write('Successfully closed poll "%s"' % poll_id)
+            except Exception, e:
+                # TODO: Test coverage for this branch.
+                print e

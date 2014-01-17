@@ -9,6 +9,18 @@
 <body>
     <h1>{{ newsletter.title }}</h1>
     <h2>{{ message.title }}</h2>
+
+    <h3>{{ message.title }}</h3>
+    {% thumbnail message.image "200x200" as image %}
+    <img src="http://{{ site.domain }}{{ image.url }}" width="{{ image.width }}" height="{{ image.height }}">
+    {% endthumbnail %}
+
+    <div>{{ message.text|safe }}</div>
+    
+    {% if message.url %}
+    <div><a href="{{ message.url }}">Read more</div></a>
+    {% endif %}
+
     {% for article in message.articles.all %}
         <h3>{{ article.title }}</h3>
         

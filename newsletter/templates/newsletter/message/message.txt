@@ -1,8 +1,9 @@
-{% load url from future %}++++++++++++++++++++
-
 {{ newsletter.title }}: {{ message.title }}
 
 ++++++++++++++++++++
+
+{{ message.title }}
+{{ message.text|striptags|safe }}
 
 {% for article in message.articles.all %}
 {{ article.title }}
