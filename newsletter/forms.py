@@ -5,21 +5,18 @@ from django.forms.util import ValidationError
 
 from django.contrib.auth.models import User
 
-from .models import Subscription
-
+from .models import Subscription,Message
 
 class NewsletterForm(forms.ModelForm):
     """ This is the base class for all forms managing subscriptions. """
+
+    email_field = forms.CharField(required=True)
 
     class Meta:
         model = Subscription
         fields = ('name_field', 'email_field')
 
     def __init__(self, *args, **kwargs):
-
-        assert 'newsletter' in kwargs, 'No newsletter specified'
-
-        newsletter = kwargs.pop('newsletter')
 
         if 'ip' in kwargs:
             ip = kwargs['ip']
@@ -28,9 +25,9 @@ class NewsletterForm(forms.ModelForm):
             ip = None
 
         super(NewsletterForm, self).__init__(*args, **kwargs)
-
-        self.instance.newsletter = newsletter
-
+        #if self.instance:            
+        #    self.fields[''] = forms.CharField()
+        
         if ip:
             self.instance.ip = ip
 
@@ -42,10 +39,50 @@ class SubscribeRequestForm(NewsletterForm):
     subscription.
     """
 
-    def clean_email_field(self):
-        data = self.cleaned_data['email_field']
+    ACTIONS = (
+        ('subscribe', _(u'subscribe')),
+        ('unsubscribe', _(u'unsubscribe')),
+        )
 
-        if not data:
+    action = forms.ChoiceField(widget=forms.widgets.RadioSelect, choices=ACTIONS,label=_('action'), initial='subscribe')
+
+    def clean(self):
+        try:
+            email = self.cleaned_data['email_field']
+            action = self.cleaned_data['action']
+        except:
+            email = None
+            action = None
+
+        try:
+            action = self.cleaned_data['action']
+        except:
+            action = None
+
+        try:
+            subscription = Subscription.objects.get(email_field__exact=email)
+            self.instance = subscription
+        except Subscription.DoesNotExist:
+            subscription = None
+
+        if action=="subscribe":
+            if subscription is not None:
+                if subscription.subscribed and not subscription.unsubscribed:
+                    raise ValidationError(_("Your e-mail address has already been subscribed to."))
+        elif action=="unsubscribe":
+            if subscription is None:
+                raise ValidationError(_("Your e-mail address has not been subscribed to."))
+            elif subscription.unsubscribed and not subscription.subscribed:
+                raise ValidationError(_("Your e-mail address has already been unsubscribed from."))
+        else:
+            raise ValidationError(_("Invalid subscription option"))
+
+        return self.cleaned_data
+
+    def clean_email_field(self):
+        try:
+            data = self.cleaned_data['email_field']
+        except:
             raise ValidationError(_("An e-mail address is required."))
 
         # Check whether we should be subscribed to as a user
@@ -62,20 +99,18 @@ class SubscribeRequestForm(NewsletterForm):
             pass
 
         # Check whether we have already been subscribed to
-        try:
-            subscription = Subscription.objects.get(email_field__exact=data)
+        #try:
+        #    subscription = Subscription.objects.get(email_field__exact=data)
 
-            if subscription.subscribed and not subscription.unsubscribed:
-                raise ValidationError(
-                    _("Your e-mail address has already been subscribed to.")
-                )
-            else:
-                self.instance = subscription
+            #if subscription.subscribed and not subscription.unsubscribed:
+            #    raise ValidationError(_("Your e-mail address has already been subscribed to."))
+            #else:
+            #    self.instance = subscription
 
-            self.instance = subscription
+        #    self.instance = subscription
 
-        except Subscription.DoesNotExist:
-            pass
+        #except Subscription.DoesNotExist:
+        #    pass
 
         return data
 
@@ -119,15 +154,10 @@ class UpdateRequestForm(NewsletterForm):
         # Set our instance on the basis of the email field, or raise
         # a validationerror
         try:
-            self.instance = Subscription.objects.get(
-                newsletter=self.instance.newsletter,
-                email_field__exact=data
-            )
+            self.instance = Subscription.objects.get(email_field__exact=data)
 
         except Subscription.DoesNotExist:
-                raise ValidationError(
-                    _("This e-mail address has not been subscribed to.")
-                )
+                raise ValidationError(_("This e-mail address has not been subscribed to."))
 
         return data
 
@@ -180,4 +210,4 @@ class UserUpdateForm(forms.ModelForm):
         # once this is supported by Django.
 
         # For now, use a hidden field.
-        hidden_fields = ('newsletter',)
+        #hidden_fields = ('email',)
