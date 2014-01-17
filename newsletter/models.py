@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models import permalink
 
 from django.template import Context, TemplateDoesNotExist
-from django.template.loader import select_template
+from django.template.loader import select_template, get_template
 
 from django.utils import translation
 from django.utils.translation import ugettext_lazy as _
@@ -14,27 +14,22 @@ from django.utils.timezone import now
 
 from django.core.mail import EmailMultiAlternatives
 
-#from django.contrib.sites.models import Site
-#from django.contrib.sites.managers import CurrentSiteManager
-
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
+
 from django.conf import settings
 from sorl.thumbnail import ImageField
 from .utils import make_activation_code, get_default_sites
 
+from tinymce.models import HTMLField
 
 class Newsletter(models.Model):
-    #site = models.ManyToManyField(Site, default=get_default_sites)
     title = models.CharField(max_length=200, verbose_name=_('newsletter title'))
     slug = models.SlugField(db_index=True, unique=True)
     email = models.EmailField(verbose_name=_('e-mail'), help_text=_('Sender e-mail'))
     sender = models.CharField(max_length=200, verbose_name=_('sender'), help_text=_('Sender name'))
     visible = models.BooleanField(default=True, verbose_name=_('visible'), db_index=True)
-
-    #objects = models.Manager()
-
-    # Automatically filter the current site
-    #on_site = CurrentSiteManager()
+    test_mode = models.BooleanField(default=True, verbose_name=_('test'))
 
     def get_templates(self, action, lang='pl'):
         """
@@ -43,15 +38,15 @@ class Newsletter(models.Model):
         template.
         """
 
-        assert action in [
-            'subscribe', 'unsubscribe', 'update', 'message'
-        ], 'Unknown action %s' % action
-
         # Common substitutions for filenames
         template_subst = {
             'action': action,
             'newsletter': self.slug
-        }
+            }
+
+        assert action in [
+            'subscribe', 'unsubscribe', 'update', 'message'
+        ], 'Unknown action %s' % action
 
         # Common root path for all the templates
         template_root = 'newsletter/message/'
@@ -68,6 +63,18 @@ class Newsletter(models.Model):
             template_root + '%(action)s.txt' % template_subst,
         ])
 
+        html_template = self.get_html_template()
+
+        return (subject_template, text_template, html_template)
+
+    def get_html_template(self,action="message", template_root='newsletter/message/'):
+
+        # Common substitutions for filenames
+        template_subst = {
+            'action': action,
+            'newsletter': self.slug
+            }
+
         try:
             html_template = select_template([
                 template_root + '%(newsletter)s/%(action)s.html' % template_subst,
@@ -77,7 +84,8 @@ class Newsletter(models.Model):
             # HTML templates are not required
             html_template = None
 
-        return (subject_template, text_template, html_template)
+        return html_template
+        
 
     def __unicode__(self):
         return self.title
@@ -147,7 +155,7 @@ class List(models.Model):
 
 class Subscription(models.Model):
     user = models.ForeignKey(User, blank=True, null=True, verbose_name=_('user'))
-    name_field = models.CharField(db_column='name', max_length=30, blank=True, null=True, verbose_name=_('name'), help_text=_('optional'))
+    name_field = models.CharField(db_column='name', max_length=30, blank=True, null=True, verbose_name=_('name, club or nick'), help_text=_('optional'))
     email_field = models.EmailField(db_column='email', verbose_name=_('e-mail'), db_index=True, blank=True, null=True )
     ip = models.IPAddressField(_("IP address"), blank=True, null=True)
     #newsletter = models.ForeignKey('Newsletter', verbose_name=_('newsletter'))
@@ -160,6 +168,11 @@ class Subscription(models.Model):
     # This should be a pseudo-field, I reckon.
     unsubscribed = models.BooleanField(default=False, verbose_name=_('unsubscribed'), db_index=True)
     unsubscribe_date = models.DateTimeField(verbose_name=_("unsubscribe date"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('subscription')
+        verbose_name_plural = _('subscriptions')
+        unique_together = ('user', 'email_field')
 
     def get_name(self):
         if self.user:
@@ -268,30 +281,39 @@ class Subscription(models.Model):
                 'list': self.list
             }
 
-    class Meta:
-        verbose_name = _('subscription')
-        verbose_name_plural = _('subscriptions')
-        unique_together = ('user', 'email_field')
-
     def get_recipient(self):
         if self.name:
             return u'%s <%s>' % (self.name, self.email)
 
         return u'%s' % (self.email)
 
-    def send_activation_email(self, action):
+    def send_activation_email(self, action, lang="pl"):
+
         assert action in [
             'subscribe', 'unsubscribe', 'update'
         ], 'Unknown action'
 
-        (subject_template, text_template, html_template) = \
-            self.newsletter.get_templates(action)
+        # Common root path for all the templates
+        template_root = 'newsletter/message/'
+        # activate current translation for the message
+        translation.activate(lang)
+
+        subject_template = get_template(template_root + '%s_subject.txt' % action)
+        text_template = get_template(template_root + '%s.txt' % action)
+
+        try:
+            html_template = get_template(
+                template_root + '%s.html' % action,
+            )
+        except TemplateDoesNotExist:
+            # HTML templates are not required
+            html_template = None
+
 
         variable_dict = {
             'subscription': self,
-            'site': Site.objects.get_current(),
-            'newsletter': self.newsletter,
             'date': self.subscribe_date,
+            'site': Site.objects.get_current(),
             'STATIC_URL': settings.STATIC_URL,
             'MEDIA_URL': settings.MEDIA_URL
         }
@@ -301,15 +323,14 @@ class Subscription(models.Model):
         message = EmailMultiAlternatives(
             subject_template.render(unescaped_context),
             text_template.render(unescaped_context),
-            from_email=self.newsletter.get_sender(),
+            #from_email=self.newsletter.get_sender(),
+            #from_email="enduhub",
             to=[self.email]
         )
 
         if html_template:
             escaped_context = Context(variable_dict)
-
-            message.attach_alternative(html_template.render(escaped_context),
-                                      "text/html")
+            message.attach_alternative(html_template.render(escaped_context),"text/html")
 
         message.send()
 
@@ -325,7 +346,6 @@ class Subscription(models.Model):
     @permalink
     def subscribe_activate_url(self):
         return ('newsletter_update_activate', (), {
-            'newsletter_slug': self.newsletter.slug,
             'email': self.email,
             'action': 'subscribe',
             'activation_code': self.activation_code
@@ -334,7 +354,6 @@ class Subscription(models.Model):
     @permalink
     def unsubscribe_activate_url(self):
         return ('newsletter_update_activate', (), {
-            'newsletter_slug': self.newsletter.slug,
             'email': self.email,
             'action': 'unsubscribe',
             'activation_code': self.activation_code
@@ -343,26 +362,22 @@ class Subscription(models.Model):
     @permalink
     def update_activate_url(self):
         return ('newsletter_update_activate', (), {
-            'newsletter_slug': self.newsletter.slug,
             'email': self.email,
             'action': 'update',
             'activation_code': self.activation_code
         })
 
-
 class Message(models.Model):
-    """ Message as sent through a Submission. """
-
-    TEMPLATES = (
-        ('newsletter/message/', 'newsletter/message/'),
-        )
+    TEMPLATES = ( ('newsletter/message/', 'newsletter/message/'), )
 
     title = models.CharField(max_length=200, verbose_name=_('title'))
-    slug = models.SlugField(verbose_name=_('slug'))
+    slug = models.SlugField(verbose_name=_('slug'), max_length=200)
     lang = models.CharField(verbose_name=_(u"language"), max_length=4, choices=settings.LANGUAGES, default='pl')
     url = models.URLField(verbose_name=_('link'), blank=True, null=True)
-    text = models.TextField(verbose_name=_('text'))
+    text = HTMLField(verbose_name=_("text"))
+    #plain_text = models.TextField(blank=True, verbose_name=_("text"))
     newsletter = models.ForeignKey('Newsletter', verbose_name=_('newsletter'),default=Newsletter.get_default_id)
+    active = models.BooleanField(default=False, verbose_name=_('active'))
     image = ImageField(upload_to='newsletter/images/%Y/%m/%d', blank=True, null=True,verbose_name=_('image'))
     template_root = models.CharField(max_length=100, verbose_name=_('template path'), choices=TEMPLATES, default='newsletter/message/')
     date_create = models.DateTimeField(verbose_name=_('created'), auto_now_add=True, editable=False)
@@ -397,149 +412,3 @@ class Message(models.Model):
             pass
 
         return None
-
-
-class Submission(models.Model):
-    """
-    Submission represents a particular Message as it is being submitted
-    to a list of Subscribers. This is where actual queueing and submission
-    happends.
-    """
-    #newsletter = models.ForeignKey('Newsletter', verbose_name=_('newsletter'), editable=False)
-    #message = models.ForeignKey('Message', verbose_name=_('message'), editable=True,default=Message.get_default_id, null=False)
-    #subscriptions = models.ManyToManyField('Subscription',help_text=_('If you select none, the system will automatically find the subscribers for you.'),blank=True, db_index=True, verbose_name=_('recipients'),limit_choices_to={'subscribed': True})
-    #publish_date = models.DateTimeField(verbose_name=_('publication date'), blank=True, null=True,default=now(), db_index=True)
-    #publish = models.BooleanField(default=True, verbose_name=_('publish'),help_text=_('Publish in archive.'), db_index=True)
-    #prepared = models.BooleanField(default=False, verbose_name=_('prepared'),db_index=True, editable=True)
-    #sent = models.BooleanField(default=False, verbose_name=_('sent'),db_index=True, editable=True)
-    #sending = models.BooleanField(default=False, verbose_name=_('sending'),db_index=True, editable=True)
-
-
-    class Meta:
-        verbose_name = _('submission')
-        verbose_name_plural = _('submissions')
-
-    def __unicode__(self):
-        return _(u"%(newsletter)s on %(publish_date)s") % {
-            'newsletter': self.message,
-            'publish_date': self.publish_date
-        }
-
-    def submit(self):
-        subscriptions = self.subscriptions.filter(subscribed=True)
-
-        logger.info(
-            ugettext(u"Submitting %(submission)s to %(count)d people"),
-            {'submission': self, 'count': subscriptions.count()}
-        )
-
-        assert self.publish_date < now(), \
-            'Something smells fishy; submission time in future.'
-
-        self.sending = True
-        self.save()
-
-        try:
-            (subject_template, text_template, html_template) = self.message.newsletter.get_templates('message',self.message.lang)
-
-            for subscription in subscriptions:
-                variable_dict = {
-                    'subscription': subscription,
-                    'site': Site.objects.get_current(),
-                    'submission': self,
-                    'message': self.message,
-                    'newsletter': self.newsletter,
-                    'date': self.publish_date,
-                    'STATIC_URL': settings.STATIC_URL,
-                    'MEDIA_URL': settings.MEDIA_URL
-                }
-
-                unescaped_context = Context(variable_dict, autoescape=False)
-
-                message = EmailMultiAlternatives(
-                    subject_template.render(unescaped_context),
-                    text_template.render(unescaped_context),
-                    from_email=self.newsletter.get_sender(),
-                    to=[subscription.get_recipient()]
-                )
-
-                print "recipient: "
-                print subscription.get_recipient()
-
-                if html_template:
-                    escaped_context = Context(variable_dict)
-
-                    message.attach_alternative(
-                        html_template.render(escaped_context),
-                        "text/html"
-                    )
-
-                try:
-                    logger.debug(
-                        ugettext(u'Submitting message to: %s.'),
-                        subscription
-                    )
-
-                    print html_template.render(unescaped_context)
-                    print "send disabled !!!!!!!!!!!!!1"
-                    #message.send()
-
-                except Exception, e:
-                    # TODO: Test coverage for this branch.
-                    logger.error(
-                        ugettext(u'Message %(subscription)s failed '
-                                 u'with error: %(error)s'),
-                        {'subscription': subscription,
-                         'error': e}
-                    )
-
-            self.sent = True
-
-        finally:
-            self.sending = False
-            self.save()
-
-    @classmethod
-    def submit_queue(cls):
-        todo = cls.objects.filter(
-            #prepared=True, sent=False, sending=False,
-            sent=False, sending=False,
-            publish_date__lt=now()
-        )
-
-        for submission in todo:
-            print "Submiting jobs: ", submission
-            submission.submit()
-
-    @classmethod
-    def from_message(cls, message):
-        logger.debug(ugettext('Submission of message %s'), message)
-        submission = cls()
-        submission.message = message
-        submission.newsletter = message.newsletter
-        submission.save()
-        submission.subscriptions = message.newsletter.get_subscriptions()
-        return submission
-
-    def save(self):
-        """ Set the newsletter from associated message upon saving. """
-        assert self.message.newsletter
-
-        self.newsletter = self.message.newsletter
-
-        return super(Submission, self).save()
-
-    @permalink
-    def get_absolute_url(self):
-        assert self.newsletter.slug
-        assert self.message.slug
-
-        return (
-            'newsletter_archive_detail', (), {
-                'newsletter_slug': self.newsletter.slug,
-                'year': self.publish_date.year,
-                'month': self.publish_date.month,
-                'day': self.publish_date.day,
-                'slug': self.message.slug
-            }
-        )
