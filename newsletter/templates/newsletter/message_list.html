@@ -1,0 +1,35 @@
+{% extends "newsletter/common.html" %}
+
+{% load i18n %}
+
+{% block title %}{% trans "Newsletter list" %}{% endblock title %}
+
+{% block body %}
+{% if user.is_authenticated %}
+<form method="POST" action="">
+  {% csrf_token %}
+  {% trans "Newsletter" %}
+  {% if user %}
+  {% trans "Subscribe" %}
+  {% endif %}
+
+  FORM: {{form}}
+
+  <p><input id="id_submit" name="submit" value="{% trans "Update subscriptions" %}" type="submit" /></p>
+</form>
+{% else %}
+NOT AUTHENTICATED - display 'submit for newseltter form'
+{% endif %}
+
+<table>
+    <tr>
+        <th>{% trans "Newsletter" %}</th>
+    </tr>
+    {% for message in messages %}
+    <tr>
+        <td><a href="{% url "newsletter_detail" message.slug %}">{{ message.title }}</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock body %}

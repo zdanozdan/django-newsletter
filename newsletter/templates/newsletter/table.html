@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% load querystring from django_tables2 %}
+{% load i18n %}
+
+{% block table %}
+<thead> 
+    {% for column in table.columns %}
+    {% if column.orderable %}
+    <th class="sorted {{ column.attrs.th.class }}" scope="col">
+      <div class="sortoptions">
+	<a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}" class="toggle {{ column.attrs.th.class }}" title="{% trans "Change sorting" %}"></a>
+      </div>
+      {% if "column-icon" in column.attrs.th.class %}
+      <div style="text-align:center" class="text">
+	<a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}">
+	  <i class="icon-edit"></i>
+	</a>
+      </div>
+      {% else %}
+      <div class="text">
+	<a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}">{{column.header|wordwrap:0|linebreaksbr}}</a>
+      </div>
+      {% endif %}
+      <div class="clear"></div>
+    </th>
+    {% else %}
+    {% if "column-icon" in column.attrs.th.class %}
+    <i class="icon-edit"></i>
+    {% else %}
+    <th {{ column.attrs.th.as_html }}>{{ column.header|wordwrap:0|linebreaksbr }}</th>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+  </tr>
+</thead>
+
+{% for row in table.page.object_list|default:table.rows %} {# support pagination #}
+{% block table.tbody.row %}
+<tr class="{% cycle "row1" "row2" %}">
+  {% for column, cell in row.items %}
+  <td {{ column.attrs.td.as_html }}>{%if cell %} {{ cell }} {% endif %}</td>
+  {% endfor %}
+</tr>
+{% endblock table.tbody.row %}
+{% empty %}
+{% if table.empty_text %}
+{% block table.tbody.empty_text %}
+<tr><td colspan="{{ table.columns|length }}">{{ table.empty_text }}</td></tr>
+{% endblock table.tbody.empty_text %}
+{% endif %}
+{% endfor %}
+
+{% endblock %}
