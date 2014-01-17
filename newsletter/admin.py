@@ -46,9 +46,7 @@ class ListAdmin(admin.ModelAdmin):
     pass
 
 class NewsletterAdmin(admin.ModelAdmin):
-    list_display = (
-        'title', 'admin_subscriptions', 'admin_messages'
-    )
+    list_display = ('pk','title', 'admin_subscriptions', 'admin_messages','test_mode')
     prepopulated_fields = {'slug': ('title',)}
 
     """ List extensions """
@@ -67,121 +65,10 @@ class NewsletterAdmin(admin.ModelAdmin):
     admin_subscriptions.short_description = ''
 
 
-class SubmissionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
-    form = SubmissionAdminForm
-    list_display = (
-        'admin_message', 'admin_newsletter', 'admin_publish_date', 'publish',
-        'admin_status_text', 'admin_status'
-    )
-    date_hierarchy = 'publish_date'
-    list_filter = ('newsletter', 'publish', 'sent')
-    save_as = True
-    filter_horizontal = ('subscriptions',)
-
-    """ List extensions """
-    def admin_message(self, obj):
-        return '<a href="%d/">%s</a>' % (obj.id, obj.message.title)
-    admin_message.short_description = ugettext('submission')
-    admin_message.allow_tags = True
-
-    def admin_newsletter(self, obj):
-        return '<a href="../newsletter/%s/">%s</a>' % (
-            obj.newsletter.id, obj.newsletter
-        )
-    admin_newsletter.short_description = ugettext('newsletter')
-    admin_newsletter.allow_tags = True
-
-    def admin_publish_date(self, obj):
-        if obj.publish_date:
-            return date_format(obj.publish_date)
-        else:
-            return ''
-    admin_publish_date.short_description = _("publish date")
-
-    def admin_status(self, obj):
-        if obj.prepared:
-            if obj.sent:
-                return u'<img src="%s" width="10" height="10" alt="%s"/>' % (
-                    ICON_URLS['yes'], self.admin_status_text(obj))
-            else:
-                if obj.publish_date > now():
-                    return \
-                        u'<img src="%s" width="10" height="10" alt="%s"/>' % (
-                            ICON_URLS['wait'], self.admin_status_text(obj))
-                else:
-                    return \
-                        u'<img src="%s" width="12" height="12" alt="%s"/>' % (
-                            ICON_URLS['wait'], self.admin_status_text(obj))
-        else:
-            return u'<img src="%s" width="10" height="10" alt="%s"/>' % (
-                ICON_URLS['no'], self.admin_status_text(obj))
-
-    admin_status.short_description = ''
-    admin_status.allow_tags = True
-
-    def admin_status_text(self, obj):
-        if obj.prepared:
-            if obj.sent:
-                return ugettext("Sent.")
-            else:
-                if obj.publish_date > now():
-                    return ugettext("Delayed submission.")
-                else:
-                    return ugettext("Submitting.")
-        else:
-            return ugettext("Not sent.")
-    admin_status_text.short_description = ugettext('Status')
-
-    """ Views """
-    def submit(self, request, object_id):
-        submission = self._getobj(request, object_id)
-
-        if submission.sent or submission.prepared:
-            messages.info(request, ugettext("Submission already sent."))
-            return HttpResponseRedirect('../')
-
-        submission.prepared = True
-        submission.save()
-
-        messages.info(request, ugettext("Your submission is being sent."))
-
-        return HttpResponseRedirect('../../')
-
-    """ URLs """
-    def get_urls(self):
-        urls = super(SubmissionAdmin, self).get_urls()
-
-        my_urls = patterns('',
-            url(r'^(.+)/submit/$',
-                self._wrap(self.submit),
-                name=self._view_name('submit'))
-        )
-
-        return my_urls + urls
-
-
-StackedInline = admin.StackedInline
-if RICHTEXT_WIDGET and RICHTEXT_WIDGET.__name__ == "ImperaviWidget":
-    # Imperavi works a little differently
-    # It's not just a field, it's also a media class and a method.
-    # To avoid complications, we reuse ImperaviStackedInlineAdmin
-    try:
-        from imperavi.admin import ImperaviStackedInlineAdmin
-        StackedInline = ImperaviStackedInlineAdmin
-    except ImportError:
-        # Log a warning when import fails as to aid debugging.
-        logger.warning(
-            'Error importing ImperaviStackedInlineAdmin. '
-            'Imperavi WYSIWYG text editor might not work.'
-        )
-
-
 class MessageAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
+    form = MessageAdminForm
     save_as = True
-    list_display = (
-        'admin_title', 'admin_newsletter', 'admin_preview', 'date_create',
-        'date_modify'
-    )
+    list_display = ('pk','admin_title', 'admin_newsletter', 'admin_preview', 'date_create','date_modify')
     list_filter = ('newsletter', )
     date_hierarchy = 'date_create'
     prepopulated_fields = {'slug': ('title',)}
@@ -198,9 +85,7 @@ class MessageAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
     admin_preview.allow_tags = True
 
     def admin_newsletter(self, obj):
-        return '<a href="../newsletter/%s/">%s</a>' % (
-            obj.newsletter.id, obj.newsletter
-        )
+        return '<a href="../newsletter/%s/">%s</a>' % (obj.newsletter.id, obj.newsletter)
     admin_newsletter.short_description = ugettext('newsletter')
     admin_newsletter.allow_tags = True
 
