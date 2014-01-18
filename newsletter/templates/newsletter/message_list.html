@@ -5,31 +5,27 @@
 {% block title %}{% trans "Newsletter list" %}{% endblock title %}
 
 {% block body %}
-{% if user.is_authenticated %}
-<form method="POST" action="">
+<form method="POST" action="{%url 'newsletter_list' %}">
   {% csrf_token %}
-  {% trans "Newsletter" %}
-  {% if user %}
-  {% trans "Subscribe" %}
+  {% if user.is_authenticated %}
+  <legend>{% trans "EnduNews - newsletter subscription" %}</legend>
+  <label class="checkbox">
+    {{form}}
+  {% else %}
+    <legend>{% trans "EnduNews - subscribe to our newsletter" %}.</legend>
+    {{form}}
+  </label>
   {% endif %}
-
-  FORM: {{form}}
-
-  <p><input id="id_submit" name="submit" value="{% trans "Update subscriptions" %}" type="submit" /></p>
+  <button type="submit" class="btn btn-primary">{% trans "Update subscriptions" %}</button>
 </form>
-{% else %}
-NOT AUTHENTICATED - display 'submit for newseltter form'
-{% endif %}
 
+{%block archive_list %}
+<h3>{%trans "EnduNews archive newsletters" %}.</h3>
 <table>
-    <tr>
-        <th>{% trans "Newsletter" %}</th>
-    </tr>
-    {% for message in messages %}
-    <tr>
-        <td><a href="{% url "newsletter_detail" message.slug %}">{{ message.title }}</a></td>
-    </tr>
-    {% endfor %}
+  {% block table %}
+  {{ block.super }}
+  {% endblock %}
 </table>
+{%endblock%}
 
 {% endblock body %}
