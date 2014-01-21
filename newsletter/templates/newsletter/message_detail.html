@@ -1,0 +1,29 @@
+{% extends "newsletter/message_list.html" %}
+{% load thumbnail %}
+{% load i18n %}
+
+{% block content %}
+
+{% thumbnail article.image "200x200" as image %}
+<img src="http://{{ site.domain }}{{ image.url}}" width="{{ image.width }}" height="{{ image.height }}">
+{% endthumbnail %}
+
+<div class="news-container">
+  <div class="news-body">
+    <h2>{{message.title}}</h2>
+    <hr/>
+    {{ message.text|safe }}
+    <hr/>
+    {% block subscribe %}
+    {{block.super}}
+    {% endblock %}
+  </div>
+</div>
+
+
+<hr/>
+{%block archive_list %}
+{{block.super}}
+{% endblock archive_list %}
+
+{% endblock content %}
