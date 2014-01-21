@@ -1,18 +1,15 @@
-{% extends "newsletter/common.html" %}
-
+{% extends "newsletter/table.html" %}
 {% load i18n %}
 
-{% block title %}{% trans "Newsletter list" %}{% endblock title %}
-
-{% block body %}
+{% block content %}
 <form method="POST" action="{%url 'newsletter_list' %}">
   {% csrf_token %}
   {% if user.is_authenticated %}
-  <legend>{% trans "EnduNews - newsletter subscription" %}</legend>
+  <legend>{% trans "newsletter subscription" %}</legend>
   <label class="checkbox">
     {{form}}
   {% else %}
-    <legend>{% trans "EnduNews - subscribe to our newsletter" %}.</legend>
+    <legend>{% trans "subscribe to our newsletter" %}.</legend>
     {{form}}
   </label>
   {% endif %}
@@ -28,4 +25,4 @@
 </table>
 {%endblock%}
 
-{% endblock body %}
+{% endblock content %}
