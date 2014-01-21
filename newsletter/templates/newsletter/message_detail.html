@@ -2,15 +2,6 @@
 {% load thumbnail %}
 {% load i18n %}
 
-{% block title %}
-<title>enduhub.com | {{message.title}}</title>
-{% endblock %}
-
-{% block breadcrumbs %}
-{{block.super}}
-<li><a href="{% url "newsletter_list" %}">{{message.title}}</a><span class="divider">/</span></li>
-{% endblock %}
-
 {% block content %}
 
 {% thumbnail article.image "200x200" as image %}
