@@ -435,7 +435,7 @@ class SubscriptionAdminForm(forms.ModelForm):
 from tinymce.widgets import TinyMCE
 class MessageAdminForm(forms.ModelForm):
 
-    text = forms.CharField(widget=TinyMCE())
+    #text = forms.CharField(widget=TinyMCE())
 
     def __init__(self, *args, **kwargs):
         super(MessageAdminForm, self).__init__(*args, **kwargs)

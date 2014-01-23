@@ -21,7 +21,7 @@ from django.conf import settings
 from sorl.thumbnail import ImageField
 from .utils import make_activation_code, get_default_sites
 
-from tinymce.models import HTMLField
+#from tinymce.models import HTMLField
 
 class Newsletter(models.Model):
     title = models.CharField(max_length=200, verbose_name=_('newsletter title'))
@@ -373,7 +373,8 @@ class Message(models.Model):
     slug = models.SlugField(verbose_name=_('slug'), max_length=200)
     lang = models.CharField(verbose_name=_(u"language"), max_length=4, choices=settings.LANGUAGES, default='pl')
     url = models.URLField(verbose_name=_('link'), blank=True, null=True)
-    text = HTMLField(verbose_name=_("text"))
+    #text = HTMLField(verbose_name=_("text"))
+    text = models.TextField(verbose_name=_("text"))
     #plain_text = models.TextField(blank=True, verbose_name=_("text"))
     newsletter = models.ForeignKey('Newsletter', verbose_name=_('newsletter'),default=Newsletter.get_default_id)
     active = models.BooleanField(default=False, verbose_name=_('active'))
