@@ -321,10 +321,9 @@ class Subscription(models.Model):
         unescaped_context = Context(variable_dict, autoescape=False)
 
         message = EmailMultiAlternatives(
-            subject_template.render(unescaped_context),
+            subject_template.render(unescaped_context).strip(),
             text_template.render(unescaped_context),
-            #from_email=self.newsletter.get_sender(),
-            #from_email="enduhub",
+            #from_email="enduhub@enduhub.com",
             to=[self.email]
         )
 

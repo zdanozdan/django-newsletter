@@ -10,7 +10,7 @@ from .models import Subscription,Message
 class NewsletterForm(forms.ModelForm):
     """ This is the base class for all forms managing subscriptions. """
 
-    email_field = forms.CharField(required=True)
+    email_field = forms.CharField(required=True, label=_("Email"))
 
     class Meta:
         model = Subscription
@@ -192,9 +192,7 @@ class UpdateForm(NewsletterForm):
 
         return data
 
-    user_activation_code = forms.CharField(
-        label=_("Activation code"), max_length=40
-    )
+    user_activation_code = forms.CharField(label=_("Activation code"), max_length=40 )
 
 
 class UserUpdateForm(forms.ModelForm):
