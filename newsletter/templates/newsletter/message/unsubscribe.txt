@@ -1,9 +1,10 @@
-Dear {{ subscription.name }},
+{% load i18n %}
+{% trans "Hello" %} {{ subscription.name }},
 
-you, or someone in your name requested unsubscription from {{ newsletter.title }}.
+{% trans "you, or someone in your name requested unsubscription from" %} {{ site.domain }}.
 
-If you would like to confirm your subscription, please follow this activation link:
+{% trans "If you would like to confirm your subscription, please follow this activation link" %}:
 http://{{ site.domain }}{{ subscription.unsubscribe_activate_url }}
 
-Kind regards,
+{%trans "Kind regards" %},
 {{ newsletter.sender }}
