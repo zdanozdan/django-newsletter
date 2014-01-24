@@ -329,7 +329,10 @@ class Subscription(models.Model):
 
         if html_template:
             escaped_context = Context(variable_dict)
-            message.attach_alternative(html_template.render(escaped_context),"text/html")
+            html = html_template.render(escaped_context)
+            #empty html file, just ignore that
+            if len(html.strip()):
+                message.attach_alternative(html,"text/html")
 
         message.send()
 
