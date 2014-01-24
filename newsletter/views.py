@@ -351,7 +351,9 @@ class ActionRequestView(NewsletterMixin, FormView):
         subscription = self.get_subscription(form)
 
         try:
-            subscription.send_activation_email(action=self.action)
+            #activate language
+            lang = translation.get_language()
+            subscription.send_activation_email(action=self.action,lang=lang)
 
         except Exception, e:
             logger.exception('Error %s while submitting email to %s.',
