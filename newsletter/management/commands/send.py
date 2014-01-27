@@ -4,9 +4,10 @@ from django.template import Context, TemplateDoesNotExist
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.utils.timezone import now
 
 from optparse import make_option
-from newsletter.models import Subscription,Newsletter,Message,List
+from newsletter.models import Subscription,Newsletter,Message,List,Submission
 
 class Command(BaseCommand):
     # Metadata about this command.
@@ -23,11 +24,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         newsletter_title = options.get('newsletter')
         message_title = options.get('message')
-
-        subscriptions = Subscription.objects.filter(subscribed=True)
-        if not subscriptions:
-            #print "No subscribed users found. Exiting ....."
-            raise Exception("No subscribed users found. Exiting .....")
 
         try:
             pk = int(newsletter_title)
@@ -51,18 +47,28 @@ class Command(BaseCommand):
 
         print "Using message: ", message
 
+        submissions = Submission.objects.filter(sent=False).filter(message=message)
+        if not submissions:
+            raise Exception("No more submitted adresses for sending.....")
+
         (subject_template, text_template, html_template) = newsletter.get_templates('message')
 
         if newsletter.test_mode:
             print "!!!!!!!!!!! Test mode, only 'newsletter_tester' group used !!!!!!!!!!!!!!!!!!!!!!!"
-            subscriptions = Subscription.objects.filter(user__groups__name='newsletter_tester')
-            print subscriptions
+            submissions = Submission.objects.filter(subscription__user__groups__name='newsletter_tester')
+            print submissions
             print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            #raise Exception("Test mode")
 
-        for subscription in subscriptions:
+        
+        for submission in submissions:
+            '''
+            First mark message as prepared
+            '''
+            submission.prepared=True
+            submission.save()
+
             variable_dict = {
-                'subscription': subscription,
+                'subscription': submission.subscription,
                 'message': message,
                 'newsletter': newsletter,
                 'site': Site.objects.get_current(),
@@ -76,7 +82,7 @@ class Command(BaseCommand):
                 subject_template.render(unescaped_context),
                 text_template.render(unescaped_context),
                 from_email=newsletter.get_sender(),
-                to=[subscription.get_recipient()]
+                to=[submission.subscription.get_recipient()]
                 )
 
 
@@ -84,11 +90,21 @@ class Command(BaseCommand):
                 escaped_context = Context(variable_dict)
                 message.attach_alternative(html_template.render(escaped_context),"text/html")
 
+            '''
+            Now mark message as ready to send
+            '''
+            submission.sending=True
+            submission.save()
+
             try:
-                    #print html_template.render(unescaped_context)
-                    #print "send disabled !!!!!!!!!!!!!1"
-                print "Sending mail to recipient: ",subscription.get_recipient()
+                print "Sending mail to recipient: ",submission.subscription.get_recipient()
                 message.send()
+                '''
+                Now mark message as ready to send
+                '''
+                submission.sent=True
+                submission.sent_date = now()
+                submission.save()
                     
             except Exception, e:
                 # TODO: Test coverage for this branch.

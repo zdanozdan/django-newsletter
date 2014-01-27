@@ -24,7 +24,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from sorl.thumbnail.admin import AdminImageMixin
 
-from .models import Newsletter, Subscription, Message, List
+from .models import Newsletter, Subscription, Message, List, Submission
 
 from django.utils.timezone import now
 
@@ -174,6 +174,9 @@ class MessageAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
 
         return my_urls + urls
 
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = ('sent_date', 'subscription','message', 'sent')
+    list_filter = ('message', 'sent')
 
 class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
     form = SubscriptionAdminForm
@@ -335,7 +338,7 @@ class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
 
 
 admin.site.register(Newsletter, NewsletterAdmin)
-#admin.site.register(Submission, SubmissionAdmin)
+admin.site.register(Submission, SubmissionAdmin)
 admin.site.register(List, ListAdmin)
 admin.site.register(Message, MessageAdmin)
 admin.site.register(Subscription, SubscriptionAdmin)

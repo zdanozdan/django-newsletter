@@ -8,10 +8,12 @@ class Command(BaseCommand):
     # Metadata about this command.
     option_list = BaseCommand.option_list + (
         make_option('--message', action='store', help='message name or pk'),
+        make_option('--remove', action='store', help='remove submission'),
     )
 
     def handle(self, *args, **options):
         message_title = options.get('message')
+        remove = options.get('remove')
 
         try:
             pk = int(message_title)
@@ -19,6 +21,11 @@ class Command(BaseCommand):
         except Message.DoesNotExist:
             raise Exception("Messages object with ID: '%s' does not exists" % newsletter_title)
 
+        if remove:
+            print "Remove submissions for message: ",message
+            Submission.objects.filter(message=message).delete()
+            exit()
+            
         #build submission list
         subscriptions = Subscription.objects.filter(subscribed=True)
         for u in subscriptions:

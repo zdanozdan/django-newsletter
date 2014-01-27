@@ -415,3 +415,26 @@ class Message(models.Model):
             pass
 
         return None
+
+class Submission(models.Model):
+    """
+    Submission represents list of Subscribers. After successfully sending message subscriber is marked as sent
+    """
+    class Meta:
+        verbose_name = _('submission')
+        verbose_name_plural = _('submissions')
+        unique_together = (('message','subscription'),)
+
+    message = models.ForeignKey('Message', verbose_name=_('message'), editable=True,default=Message.get_default_id, null=False)
+    subscription = models.ForeignKey('Subscription', db_index=True, verbose_name=_('recipients'))
+    sent_date = models.DateTimeField(verbose_name=_('sent date'), blank=True, null=True, db_index=True)
+    prepared = models.BooleanField(default=False, verbose_name=_('prepared'),db_index=True, editable=False)
+    sending = models.BooleanField(default=False, verbose_name=_('sending'),db_index=True, editable=False)
+    #sent = models.BooleanField(default=False, verbose_name=_('sent'),db_index=True, editable=False )
+    sent = models.BooleanField(default=False, verbose_name=_('sent'),db_index=True)
+
+    def __unicode__(self):
+        return _(u"%(subscription)s") % {
+            'subscription': self.subscription
+        }
+
