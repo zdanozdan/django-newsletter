@@ -55,11 +55,10 @@ class Command(BaseCommand):
 
         if newsletter.test_mode:
             print "!!!!!!!!!!! Test mode, only 'newsletter_tester' group used !!!!!!!!!!!!!!!!!!!!!!!"
-            submissions = Submission.objects.filter(subscription__user__groups__name='newsletter_tester')
+            submissions = Submission.objects.filter(subscription__user__groups__name='newsletter_tester').filter(message=message)
             print submissions
             print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
-        
         for submission in submissions:
             '''
             First mark message as prepared
@@ -78,7 +77,7 @@ class Command(BaseCommand):
 
             unescaped_context = Context(variable_dict, autoescape=False)
 
-            message = EmailMultiAlternatives(
+            email_message = EmailMultiAlternatives(
                 subject_template.render(unescaped_context),
                 text_template.render(unescaped_context),
                 from_email=newsletter.get_sender(),
@@ -88,7 +87,7 @@ class Command(BaseCommand):
 
             if html_template:
                 escaped_context = Context(variable_dict)
-                message.attach_alternative(html_template.render(escaped_context),"text/html")
+                email_message.attach_alternative(html_template.render(escaped_context),"text/html")
 
             '''
             Now mark message as ready to send
@@ -98,7 +97,7 @@ class Command(BaseCommand):
 
             try:
                 print "Sending mail to recipient: ",submission.subscription.get_recipient()
-                message.send()
+                email_message.send()
                 '''
                 Now mark message as ready to send
                 '''
