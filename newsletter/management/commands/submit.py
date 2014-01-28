@@ -18,8 +18,9 @@ class Command(BaseCommand):
         try:
             pk = int(message_title)
             message = Message.objects.get(id=pk)
-        except Message.DoesNotExist:
-            raise Exception("Messages object with ID: '%s' does not exists" % newsletter_title)
+        except:
+            raise Exception("Messages object with ID: '%s' does not exists" % message_title)
+            
 
         if remove:
             print "Remove submissions for message: ",message
