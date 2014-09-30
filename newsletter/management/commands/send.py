@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template import Context, TemplateDoesNotExist
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -24,6 +24,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         newsletter_title = options.get('newsletter')
         message_title = options.get('message')
+
+        backend = settings.NEWSLETTER_EMAIL_BACKEND
+        print "Using newsletter email backend: ",backend
+        connection = get_connection(backend)
 
         try:
             pk = int(newsletter_title)
@@ -97,13 +101,15 @@ class Command(BaseCommand):
 
             try:
                 print "Sending mail to recipient: ",submission.subscription.get_recipient()
-                email_message.send()
+                connection.send_messages([email_message],)
+                #email_message.send()
                 '''
                 Now mark message as ready to send
                 '''
                 submission.sent=True
                 submission.sent_date = now()
                 submission.save()
+                connection.close()
                     
             except Exception, e:
                 # TODO: Test coverage for this branch.
