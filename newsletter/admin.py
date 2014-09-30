@@ -178,6 +178,8 @@ class SubmissionAdmin(admin.ModelAdmin):
     list_display = ('sent_date', 'subscription','message', 'sent')
     list_filter = ('message', 'sent')
 
+    search_fields = ('subscription__user__username','subscription__user__email')
+
 class SubscriptionAdmin(admin.ModelAdmin, ExtendibleModelAdminMixin):
     form = SubscriptionAdminForm
     list_display = (
