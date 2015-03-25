@@ -9,11 +9,13 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('--message', action='store', help='message name or pk'),
         make_option('--remove', action='store', help='remove submission'),
+        make_option('--list', action='store', help='create sumbission from list'),
     )
 
     def handle(self, *args, **options):
         message_title = options.get('message')
         remove = options.get('remove')
+        list=options.get('list')
 
         try:
             pk = int(message_title)
@@ -28,7 +30,11 @@ class Command(BaseCommand):
             exit()
             
         #build submission list
-        subscriptions = Subscription.objects.filter(subscribed=True)
+        if list:
+            subscriptions = Subscription.objects.filter(subscribed=True,list__name=list)
+        else:
+            subscriptions = Subscription.objects.filter(subscribed=True,list__name=list)
+
         for u in subscriptions:
             try:
                 s = Submission.objects.get(subscription=u,message=message)
