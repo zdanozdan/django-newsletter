@@ -14,6 +14,7 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('--newsletter', action='store', help='newsletter name or pk'),
         make_option('--message', action='store', help='message name or pk'),
+        make_option('--size', action='store', help='pack size'),
     )
 
     '''
@@ -24,6 +25,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         newsletter_title = options.get('newsletter')
         message_title = options.get('message')
+        pack = 0
+        try:
+            pack = int(options.get('size'))
+            print "Sending maks package size : %s " % pack
+        except:
+            raise Exception("Size option must be integer value")
 
         backend = settings.NEWSLETTER_EMAIL_BACKEND
         print "Using newsletter email backend: ",backend
@@ -54,6 +61,10 @@ class Command(BaseCommand):
         submissions = Submission.objects.filter(sent=False).filter(message=message)
         if not submissions:
             raise Exception("No more submitted adresses for sending.....")
+
+        #apply sending limit
+        if pack > 0:
+            submissions = submissions[0:pack]
 
         (subject_template, text_template, html_template) = newsletter.get_templates('message')
 
