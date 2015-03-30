@@ -30,7 +30,8 @@ class Command(BaseCommand):
             pack = int(options.get('size'))
             print "Sending maks package size : %s " % pack
         except:
-            raise Exception("Size option must be integer value")
+            pass
+            #raise Exception("Size option must be integer value")
 
         backend = settings.NEWSLETTER_EMAIL_BACKEND
         print "Using newsletter email backend: ",backend
