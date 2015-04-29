@@ -10,7 +10,7 @@ class Command(BaseCommand):
         users = User.objects.all()
         for u in users:
             try:
-                s = Subscription.objects.get(user=u)
+                s = Subscription.objects.get(user=u,list=auth_list)
                 print "skipping, user alread loaded from auth: ",s
             except Subscription.DoesNotExist:
                 print "adding new user from auth: ",u
