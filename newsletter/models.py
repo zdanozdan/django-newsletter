@@ -28,6 +28,7 @@ class Newsletter(models.Model):
     slug = models.SlugField(db_index=True, unique=True)
     email = models.EmailField(verbose_name=_('e-mail'), help_text=_('Sender e-mail'))
     sender = models.CharField(max_length=200, verbose_name=_('sender'), help_text=_('Sender name'))
+    message_sender = models.ForeignKey(User, blank=True, null=True, verbose_name=_('Internal message sender'))
     visible = models.BooleanField(default=True, verbose_name=_('visible'), db_index=True)
     test_mode = models.BooleanField(default=True, verbose_name=_('test'))
 
